@@ -23,6 +23,14 @@ const availableVideosContainer = document.getElementById('available-videos-conta
 const closeFileBrowserBtn = document.getElementById('close-file-browser');
 const closeFileBrowserBtn2 = document.getElementById('close-file-browser-2');
 
+const pauseButton = document.getElementById('pause-button');
+const resumeButton = document.getElementById('resume-button');
+const cancelButton = document.getElementById('cancel-button');
+
+let isPaused = false;
+let isCancelled = false;
+let pollTimeoutId = null;
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Set default language and load translations
@@ -109,6 +117,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(convertButton) {
         convertButton.addEventListener('click', startConversion);
     }
+
+    if(pauseButton) pauseButton.addEventListener('click', pauseConversion);
+    if(resumeButton) resumeButton.addEventListener('click', resumeConversion);
+    if(cancelButton) cancelButton.addEventListener('click', cancelConversion);
 
     // Fetch initial data
     getVersion();
@@ -346,6 +358,8 @@ async function getConversionStatus() {
 
 async function startConversion() {
     const convertButton = document.getElementById('convert-button');
+    const pauseButton = document.getElementById('pause-button');
+    const cancelButton = document.getElementById('cancel-button');
     const progressSection = document.getElementById('progress-section');
     const currentFileProgressBar = document.getElementById('current-file-progress-bar');
     const totalProgressBar = document.getElementById('total-progress-bar');
@@ -357,9 +371,16 @@ async function startConversion() {
         return;
     }
 
+    // Reset state for a new run
+    isPaused = false;
+    isCancelled = false;
+
     // --- UI Update: Start Process ---
     progressSection.classList.remove('hidden');
+    convertButton.classList.add('hidden'); // Hide the start button
     convertButton.disabled = true;
+    pauseButton.classList.remove('hidden');
+    cancelButton.classList.remove('hidden');
     
     // Reset progress bars and labels
     currentFileProgressBar.style.width = '0%';
@@ -386,7 +407,6 @@ async function startConversion() {
     };
 
     try {
-        // 1. Start the conversion process on the backend
         const response = await fetch('/convert', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -398,72 +418,123 @@ async function startConversion() {
             throw new Error(errorData.error || 'Failed to start conversion.');
         }
 
-        // 2. Start polling for status updates
+        // Start polling for status updates
         pollStatus();
 
     } catch (error) {
         console.error('Error starting conversion:', error);
-        currentFileLabel.textContent = t('A critical error occurred.');
+        handleConversionEnd(false, error.message);
+    }
+}
+
+function pollStatus() {
+    if (isPaused || isCancelled) {
+        return; // Stop polling if paused or cancelled
+    }
+
+    const currentFileProgressBar = document.getElementById('current-file-progress-bar');
+    const totalProgressBar = document.getElementById('total-progress-bar');
+    const currentFileLabel = document.getElementById('current-file-label');
+    const totalProgressLabel = document.getElementById('total-progress-label');
+
+    fetch('/conversionStatus')
+        .then(res => {
+            if (!res.ok) throw new Error('Polling request failed.');
+            return res.json();
+        })
+        .then(status => {
+            if (isCancelled) return; // Check again in case cancel was clicked during fetch
+
+            const totalFiles = status.file_counter || selectedFiles.length;
+            const finishedFiles = status.finished_files_counter || 0;
+            const jobProgress = status.job_progress || 0;
+
+            currentFileProgressBar.style.width = `${jobProgress}%`;
+
+            if (finishedFiles < selectedFiles.length) {
+                const currentFile = selectedFiles[finishedFiles];
+                currentFileLabel.textContent = `${t('Processing')} ${truncateMiddle(currentFile.name, 40)}...`;
+            }
+
+            const totalPercentageBasedOnFiles = totalFiles > 0 ? (finishedFiles / totalFiles) * 100 : 0;
+            const partialProgressOfCurrentFile = (1 / totalFiles) * jobProgress;
+            const totalPercentage = Math.round(totalPercentageBasedOnFiles + partialProgressOfCurrentFile);
+
+            totalProgressBar.style.width = `${totalPercentage}%`;
+            totalProgressLabel.textContent = `${totalPercentage}%`;
+
+            if (status.is_finished || (status.finished_files_counter !== undefined && status.finished_files_counter === status.file_counter)) {
+                handleConversionEnd(true);
+            } else {
+                pollTimeoutId = setTimeout(pollStatus, 500);
+            }
+        })
+        .catch(err => {
+            console.error('Error during polling:', err);
+            handleConversionEnd(false, t('A critical error occurred during polling.'));
+        });
+}
+
+function pauseConversion() {
+    isPaused = true;
+    document.getElementById('pause-button').classList.add('hidden');
+    document.getElementById('resume-button').classList.remove('hidden');
+    // Optional: Send pause signal to backend if it supports it
+    // fetch('/pauseConversion', { method: 'POST' });
+}
+
+function resumeConversion() {
+    isPaused = false;
+    document.getElementById('resume-button').classList.add('hidden');
+    document.getElementById('pause-button').classList.remove('hidden');
+    // Restart polling
+    pollStatus(); 
+}
+
+function cancelConversion() {
+    isCancelled = true;
+    clearTimeout(pollTimeoutId); // Stop any scheduled polling
+
+    // Reset UI
+    const convertButton = document.getElementById('convert-button');
+    const progressSection = document.getElementById('progress-section');
+    convertButton.classList.remove('hidden'); // Show the start button again
+    convertButton.disabled = false;
+    document.getElementById('pause-button').classList.add('hidden');
+    document.getElementById('resume-button').classList.add('hidden');
+    document.getElementById('cancel-button').classList.add('hidden');
+    progressSection.classList.add('hidden');
+    
+    // Optional: Send cancel signal to backend
+    // fetch('/cancelConversion', { method: 'POST' });
+}
+
+function handleConversionEnd(success, message = '') {
+    const convertButton = document.getElementById('convert-button');
+    const progressSection = document.getElementById('progress-section');
+    const currentFileLabel = document.getElementById('current-file-label');
+    const totalProgressBar = document.getElementById('total-progress-bar');
+    
+    if (success) {
+        currentFileLabel.textContent = t('Conversion successful!');
+        document.getElementById('current-file-progress-bar').style.width = '100%';
+        totalProgressBar.style.width = '100%';
+        document.getElementById('total-progress-label').textContent = '100%';
+    } else {
+        currentFileLabel.textContent = message || t('Conversion failed.');
         totalProgressBar.classList.replace('bg-green-500', 'bg-red-500');
-        convertButton.disabled = false;
-        setTimeout(() => {
-            progressSection.classList.add('hidden');
-        }, 5000);
     }
 
-    // --- Polling Function ---
-    function pollStatus() {
-        fetch('/conversionStatus')
-            .then(res => {
-                if (!res.ok) throw new Error('Polling request failed.');
-                return res.json();
-            })
-            .then(status => {
-                const totalFiles = status.file_counter || selectedFiles.length;
-                const finishedFiles = status.finished_files_counter || 0;
-                const jobProgress = status.job_progress || 0;
+    convertButton.classList.remove('hidden'); // Show the start button again
+    convertButton.disabled = false;
+    document.getElementById('pause-button').classList.add('hidden');
+    document.getElementById('resume-button').classList.add('hidden');
+    document.getElementById('cancel-button').classList.add('hidden');
 
-                // Update current file progress bar
-                currentFileProgressBar.style.width = `${jobProgress}%`;
-
-                // Update current file label (if conversion is in progress)
-                if (finishedFiles < selectedFiles.length) {
-                    const currentFile = selectedFiles[finishedFiles];
-                    currentFileLabel.textContent = `${t('Processing')} ${truncateMiddle(currentFile.name, 40)}...`;
-                }
-
-                // Update total progress bar and label
-                var totalPercentage = totalFiles > 0 ? Math.round((finishedFiles / totalFiles) * 100) : 0;
-                const totalPercentagePartialAdd = jobProgress < 100 ? jobProgress / totalFiles : 0
-                totalPercentage += totalPercentagePartialAdd
-                totalProgressBar.style.width = `${totalPercentage}%`;
-                totalProgressLabel.textContent = `${totalPercentage}%`;
-
-                // Check if conversion is complete
-                if (status.finished_files_counter !== undefined && status.file_counter !== undefined && status.finished_files_counter === status.file_counter) {
-                    currentFileLabel.textContent = t('Conversion successful!');
-                    currentFileProgressBar.style.width = '100%'; // Ensure it fills up
-                    totalProgressBar.style.width = '100%';
-                    totalProgressLabel.textContent = '100%';
-                    convertButton.disabled = false;
-                    setTimeout(() => {
-                        progressSection.classList.add('hidden');
-                    }, 5000);
-                } else {
-                    // If not finished, schedule the next poll
-                    setTimeout(pollStatus, 1000); // Poll every 1s
-                }
-            })
-            .catch(err => {
-                console.error('Error during polling:', err);
-                currentFileLabel.textContent = t('A critical error occurred during polling.');
-                totalProgressBar.classList.replace('bg-green-500', 'bg-red-500');
-                convertButton.disabled = false;
-                setTimeout(() => {
-                    progressSection.classList.add('hidden');
-                }, 5000);
-            });
-    }
+    setTimeout(() => {
+        progressSection.classList.add('hidden');
+        totalProgressBar.classList.replace('bg-red-500', 'bg-green-500'); // Reset color for next run
+    }, 5000);
 }
 
 function applyTranslations() {
