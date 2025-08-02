@@ -23,11 +23,11 @@ const availableVideosContainer = document.getElementById('available-videos-conta
 const closeFileBrowserBtn = document.getElementById('close-file-browser');
 const closeFileBrowserBtn2 = document.getElementById('close-file-browser-2');
 
-const pauseButton = document.getElementById('pause-button');
+// const pauseButton = document.getElementById('pause-button');
 const resumeButton = document.getElementById('resume-button');
 const cancelButton = document.getElementById('cancel-button');
 
-let isPaused = false;
+// let isPaused = false;
 let isCancelled = false;
 let pollTimeoutId = null;
 
@@ -118,8 +118,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         convertButton.addEventListener('click', startConversion);
     }
 
-    if(pauseButton) pauseButton.addEventListener('click', pauseConversion);
-    if(resumeButton) resumeButton.addEventListener('click', resumeConversion);
+    // if(pauseButton) pauseButton.addEventListener('click', pauseConversion);
+    // if(resumeButton) resumeButton.addEventListener('click', resumeConversion);
     if(cancelButton) cancelButton.addEventListener('click', cancelConversion);
 
     // Fetch initial data
@@ -358,7 +358,7 @@ async function getConversionStatus() {
 
 async function startConversion() {
     const convertButton = document.getElementById('convert-button');
-    const pauseButton = document.getElementById('pause-button');
+    // const pauseButton = document.getElementById('pause-button');
     const cancelButton = document.getElementById('cancel-button');
     const progressSection = document.getElementById('progress-section');
     const currentFileProgressBar = document.getElementById('current-file-progress-bar');
@@ -372,14 +372,14 @@ async function startConversion() {
     }
 
     // Reset state for a new run
-    isPaused = false;
+    // isPaused = false;
     isCancelled = false;
 
     // --- UI Update: Start Process ---
     progressSection.classList.remove('hidden');
     convertButton.classList.add('hidden'); // Hide the start button
     convertButton.disabled = true;
-    pauseButton.classList.remove('hidden');
+    // pauseButton.classList.remove('hidden');
     cancelButton.classList.remove('hidden');
     
     // Reset progress bars and labels
@@ -428,7 +428,8 @@ async function startConversion() {
 }
 
 function pollStatus() {
-    if (isPaused || isCancelled) {
+    // if (isPaused || isCancelled) {
+    if (isCancelled) {
         return; // Stop polling if paused or cancelled
     }
 
@@ -475,21 +476,22 @@ function pollStatus() {
         });
 }
 
-function pauseConversion() {
-    isPaused = true;
-    document.getElementById('pause-button').classList.add('hidden');
-    document.getElementById('resume-button').classList.remove('hidden');
-    // Optional: Send pause signal to backend if it supports it
-    // fetch('/pauseConversion', { method: 'POST' });
-}
+// function pauseConversion() {
+//     isPaused = true;
+//     document.getElementById('pause-button').classList.add('hidden');
+//     document.getElementById('resume-button').classList.remove('hidden');
+//     // Optional: Send pause signal to backend if it supports it
+//     // fetch('/pauseConversion', { method: 'POST' });
+// }
 
-function resumeConversion() {
-    isPaused = false;
-    document.getElementById('resume-button').classList.add('hidden');
-    document.getElementById('pause-button').classList.remove('hidden');
-    // Restart polling
-    pollStatus(); 
-}
+// function resumeConversion() {
+//     isPaused = false;
+//     document.getElementById('resume-button').classList.add('hidden');
+//     document.getElementById('pause-button').classList.remove('hidden');
+//     // fetch('/pauseConversion', { method: 'POST' });
+//     // Restart polling
+//     pollStatus(); 
+// }
 
 function cancelConversion() {
     isCancelled = true;
@@ -500,7 +502,7 @@ function cancelConversion() {
     const progressSection = document.getElementById('progress-section');
     convertButton.classList.remove('hidden'); // Show the start button again
     convertButton.disabled = false;
-    document.getElementById('pause-button').classList.add('hidden');
+    // document.getElementById('pause-button').classList.add('hidden');
     document.getElementById('resume-button').classList.add('hidden');
     document.getElementById('cancel-button').classList.add('hidden');
     progressSection.classList.add('hidden');
@@ -527,7 +529,7 @@ function handleConversionEnd(success, message = '') {
 
     convertButton.classList.remove('hidden'); // Show the start button again
     convertButton.disabled = false;
-    document.getElementById('pause-button').classList.add('hidden');
+    // document.getElementById('pause-button').classList.add('hidden');
     document.getElementById('resume-button').classList.add('hidden');
     document.getElementById('cancel-button').classList.add('hidden');
 
