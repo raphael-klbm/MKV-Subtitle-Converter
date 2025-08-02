@@ -35,6 +35,7 @@ class Server:
         self.app.add_url_rule('/userSettings', 'user_settings', self.user_settings, methods=['GET', 'POST'])
         self.app.add_url_rule('/files', 'video_files', self.video_files)
         self.app.add_url_rule('/conversionStatus', 'update_gui', self.gui.update_gui, methods=['GET', 'POST'])
+        self.app.add_url_rule('/cancelConversion', 'cancel_conversion', self.cancel_conversion, methods=['POST'])
 
     def get_version(self):
         response = make_response(self.config.get_version(), 200)
@@ -149,7 +150,17 @@ class Server:
         files = self.build_tree(self.app.config['UPLOAD_FOLDER'])
         response = make_response(json.dumps(files), 200, {'Content-Type': 'application/json'})
         return response
-
+    
+    def cancel_conversion(self):
+        """Cancel the current conversion process."""
+        self.gui.continue_flag = False
+        self.gui.edit_flag = False
+        self.gui.stop_flag = True
+        logging.info("Conversion cancelled by user.")
+        
+        response = make_response("Conversion cancelled", 200)
+        return response
+    
 
 class ServerGUI:
     def __init__(self):

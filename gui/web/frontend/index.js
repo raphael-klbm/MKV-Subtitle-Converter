@@ -24,7 +24,7 @@ const closeFileBrowserBtn = document.getElementById('close-file-browser');
 const closeFileBrowserBtn2 = document.getElementById('close-file-browser-2');
 
 // const pauseButton = document.getElementById('pause-button');
-const resumeButton = document.getElementById('resume-button');
+// const resumeButton = document.getElementById('resume-button');
 const cancelButton = document.getElementById('cancel-button');
 
 // let isPaused = false;
@@ -503,12 +503,12 @@ function cancelConversion() {
     convertButton.classList.remove('hidden'); // Show the start button again
     convertButton.disabled = false;
     // document.getElementById('pause-button').classList.add('hidden');
-    document.getElementById('resume-button').classList.add('hidden');
+    // document.getElementById('resume-button').classList.add('hidden');
     document.getElementById('cancel-button').classList.add('hidden');
     progressSection.classList.add('hidden');
     
-    // Optional: Send cancel signal to backend
-    // fetch('/cancelConversion', { method: 'POST' });
+    // Send cancel signal to backend
+    fetch('/cancelConversion', { method: 'POST' });
 }
 
 function handleConversionEnd(success, message = '') {
@@ -530,7 +530,7 @@ function handleConversionEnd(success, message = '') {
     convertButton.classList.remove('hidden'); // Show the start button again
     convertButton.disabled = false;
     // document.getElementById('pause-button').classList.add('hidden');
-    document.getElementById('resume-button').classList.add('hidden');
+    // document.getElementById('resume-button').classList.add('hidden');
     document.getElementById('cancel-button').classList.add('hidden');
 
     setTimeout(() => {
