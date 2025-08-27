@@ -8,7 +8,7 @@ import requests
 from packaging.version import Version
 import pytesseract
 import threading
-
+import pathlib
 
 class Server:
     def __init__(self):
@@ -69,15 +69,43 @@ class Server:
         return make_response(json.dumps(iso_codes), 200, {'Content-Type': 'application/json'})
 
     def upload_file(self):
-        if 'file' not in request.files:
+        if 'files[]' not in request.files:
             return make_response("No file part", 400)
-        file = request.files['file']
-        if file.filename == '':
-            return make_response("No selected file", 400)
-        if file:
-            filename = file.filename
-            file.save(os.path.join(self.app.config['UPLOAD_FOLDER'], filename))
-            return make_response("File uploaded successfully", 200)
+        
+        files = request.files.getlist('files[]')
+        
+        for file in files:
+            if file.filename == '':
+                continue
+            if file:
+                filename = pathlib.Path(file.filename).name # Sanitize filename
+                file.save(os.path.join(self.app.config['UPLOAD_FOLDER'], filename))
+                
+        response = json.dumps({
+            'success': True
+        })
+        return make_response(response, 200, {'Content-Type': 'application/json'})
+
+    def video_files(self):
+        def list_files_recursively(directory):
+            result = {}
+            try:
+                for entry in os.scandir(directory):
+                    if entry.name.startswith('.'):
+                        continue
+                    if entry.is_dir():
+                        result[entry.name] = list_files_recursively(entry.path)
+                    else:
+                        result[entry.name] = {
+                            "size": entry.stat().st_size
+                        }
+            except FileNotFoundError:
+                return {}
+            return result
+
+        input_dir = self.app.config['UPLOAD_FOLDER']
+        files = list_files_recursively(input_dir)
+        return make_response(json.dumps(files), 200, {'Content-Type': 'application/json'})
 
     def convert(self):
         data = json.loads(request.data)
@@ -131,7 +159,10 @@ class Server:
         else:
             print(type(request.json))
             self.config.from_json(request.json)
-            return make_response("Settings updated successfully", 200)
+            response = json.dumps({
+                'success': True
+            })
+            return make_response(response, 200, {'Content-Type': 'application/json'})
         
     def build_tree(self, root_dir):
         tree = {}

@@ -22,6 +22,7 @@ const fileBrowserModal = document.getElementById('file-browser-modal');
 const availableVideosContainer = document.getElementById('available-videos-container');
 const closeFileBrowserBtn = document.getElementById('close-file-browser');
 const closeFileBrowserBtn2 = document.getElementById('close-file-browser-2');
+const modalFileUploadInput = document.getElementById('modal-file-upload');
 
 // const pauseButton = document.getElementById('pause-button');
 // const resumeButton = document.getElementById('resume-button');
@@ -65,13 +66,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- File Handling Logic ---
     if (fileInput) {
+        const dropZone = fileInput.parentElement;
+
         // We listen on the label, not the hidden input itself
-        fileInput.parentElement.addEventListener('click', (e) => {
+        dropZone.addEventListener('click', (e) => {
             // Only open modal if not clicking a delete button or inside the file list
             if (e.target.closest('.delete-file-btn') || e.target.closest('#file-list')) return;
             e.preventDefault();
             if (fileBrowserModal) {
                 fileBrowserModal.classList.remove('hidden');
+            }
+        });
+
+        // --- Drag and Drop Logic ---
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            // Optional: Add a class to give visual feedback
+            if (uploadPrompt) uploadPrompt.classList.add('border-blue-500', 'dark:border-blue-400');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            // Optional: Remove the visual feedback class
+            if (uploadPrompt) uploadPrompt.classList.remove('border-blue-500', 'dark:border-blue-400');
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            // Optional: Remove the visual feedback class
+            if (uploadPrompt) uploadPrompt.classList.remove('border-blue-500', 'dark:border-blue-400');
+            
+            if (e.dataTransfer.files.length > 0) {
+                await uploadFiles(e.dataTransfer.files);
+                // Refresh file list after upload
+                await fetchVideos();
             }
         });
     }
@@ -82,6 +109,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (closeFileBrowserBtn2) {
         closeFileBrowserBtn2.addEventListener('click', () => fileBrowserModal.classList.add('hidden'));
+    }
+
+    if (modalFileUploadInput) {
+        modalFileUploadInput.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                await uploadFiles(e.target.files);
+                // Refresh file list after upload
+                await fetchVideos();
+            }
+        });
     }
 
     // --- Slider Logic ---
@@ -219,6 +256,26 @@ function truncateMiddle(text, maxLength) {
     }
     const half = Math.floor(maxLength / 2) - 2; // -2 for the ellipsis
     return `${text.substring(0, half)}...${text.substring(text.length - half)}`;
+}
+
+async function uploadFiles(files) {
+    console.log('Uploading files:', Array.from(files).map(f => f.name));
+    const formData = new FormData();
+    for (const file of files) {
+        formData.append('files[]', file);
+    }
+
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        if (!response.ok) {
+            console.error('File upload failed:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error uploading files:', error);
+    }
 }
 
 // --- Fetch Languages ---

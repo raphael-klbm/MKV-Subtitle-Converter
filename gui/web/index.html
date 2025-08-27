@@ -288,7 +288,13 @@
                 <!-- File tree will be rendered here by JavaScript -->
             </div>
              <!-- Modal Footer -->
-            <div class="flex justify-end gap-4 border-t border-slate-200 dark:border-slate-700 px-6 py-3 bg-slate-50 dark:bg-slate-800/50">
+            <div class="flex justify-between items-center gap-4 border-t border-slate-200 dark:border-slate-700 px-6 py-3 bg-slate-50 dark:bg-slate-800/50">
+                <div>
+                    <label for="modal-file-upload" class="cursor-pointer px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700" i18n="Upload Files">
+                        Upload Files
+                    </label>
+                    <input type="file" id="modal-file-upload" class="hidden" multiple accept=".mkv,.mp4">
+                </div>
                 <button id="close-file-browser-2" class="px-6 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500" i18n="Close">Close</button>
             </div>
         </div>
