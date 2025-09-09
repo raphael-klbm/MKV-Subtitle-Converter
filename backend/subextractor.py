@@ -20,7 +20,8 @@ class SubExtractor:
 
     def start(self):
         self.__extract_metadata()
-        self.__extract_subtitles()
+        self.__extract_sup_subtitles()
+        self.__extract_srt_subtitles()
 
     def __extract_metadata(self):
         self.probe = os.popen(f"ffprobe \"{self.file_path}\" -of json -show_entries format:stream").read()
@@ -75,8 +76,8 @@ class SubExtractor:
 
 
     # helper function for threading
-    def __extract(self, track_id: int, times: list[int], finished: list[bool]):
-        sub_file_path = Path(self.sub_dir, f"{track_id}.sup")
+    def __extract(self, track_id: int, file_ending: str, times: list[int], finished: list[bool]):
+        sub_file_path = Path(self.sub_dir, f"{track_id}.{file_ending}")
         command = [
             "ffmpeg",
             "-y",
@@ -95,8 +96,7 @@ class SubExtractor:
         finished[track_id] = True
 
 
-    def __extract_subtitles(self) -> list[int]:
-        self.subtitle_counter = 0
+    def __extract_sup_subtitles(self) -> list[int]:
         thread_pool = []
 
         if self.continue_flag is False:
@@ -133,7 +133,52 @@ class SubExtractor:
                 continue
             
             current_times.append(0)
-            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, current_times, finished))
+            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, 'sup', current_times, finished))
+            finished.append(False)
+            thread.start()
+            thread_pool.append(thread)
+
+        for thread in thread_pool:
+            thread.join()
+
+    def __extract_srt_subtitles(self) -> list[int]:
+        thread_pool = []
+
+        if self.continue_flag is False:
+            return
+
+        subtitle_streams = [stream for stream in self.probe['streams'] if stream['codec_name'] == 'subrip']
+        total_time = 0
+        current_times = []
+        finished = []
+        start_time = datetime(1900, 1, 1)
+
+        if not os.path.exists(self.sub_dir):
+            self.sub_dir.mkdir(parents=True, exist_ok=True)
+            
+        for i, subtitle in enumerate(subtitle_streams):
+
+            # calculate total timelength of subtitles
+            if 'tags' in subtitle and any('duration' in key.lower() for key in subtitle['tags']):
+                subtitle_time_key = [key for key in subtitle['tags'] if 'duration' in key.lower()][0]
+                subtitle_time = subtitle['tags'][subtitle_time_key]
+                subtitle_time = subtitle_time.split('.')[0]  # remove milliseconds
+                subtitle_time = datetime.strptime(subtitle_time, "%H:%M:%S")
+                subtitle_time = subtitle_time - start_time
+                subtitle_time = subtitle_time.total_seconds()
+            else:
+                subtitle_time = 0
+
+            total_time += subtitle_time
+
+            self.subtitle_counter += 1
+
+            # skip if subtitle already exists
+            if os.path.exists(str(self.sub_dir / f'{self.subtitle_counter - 1}.srt')):
+                continue
+            
+            current_times.append(0)
+            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, 'srt', current_times, finished))
             finished.append(False)
             thread.start()
             thread_pool.append(thread)

@@ -79,6 +79,10 @@ class SubtitleConverter:
         srt_file = os.path.join(self.sub_dir, f'{track_id}.srt')
         pgs_file = os.path.join(self.sub_dir, f'{track_id}.sup')
 
+        # extracted subtitle was already srt
+        if (not os.path.exists(pgs_file)) and os.path.exists(srt_file):
+            return 
+
         open(srt_file, "w").close() # create empty SRT file
 
         pgs = pgsreader.PGSReader(pgs_file)
