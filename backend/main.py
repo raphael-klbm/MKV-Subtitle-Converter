@@ -7,6 +7,7 @@ import time
 import subprocess
 from backend.subextractor import SubExtractor
 from backend.subconverter import SubtitleConverter
+from pathlib import Path
 
 class SubMain:
 
@@ -53,7 +54,7 @@ class SubMain:
 
         self.config.logger.info(f'Muxing file {self.file_name}.')
         new_file_dir = os.path.dirname(self.file_path)
-        new_file_path = f"{new_file_dir}\{self.file_name} (1).mkv"
+        new_file_path = Path(new_file_dir) / f"{self.file_name} (1).mkv"
 
         self.shared_dict['current_job'] = Jobs.MUXING
 
