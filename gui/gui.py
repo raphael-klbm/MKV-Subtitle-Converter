@@ -32,7 +32,8 @@ class GUI:
         self.create_menu()
 
         theme = self.config.get_theme()
-        self.window.tk.call('source', f'gui/themes/forest-{theme}.tcl')
+        theme_path = self.get_theme_path(theme)
+        self.window.tk.call('source', theme_path)
         ttk.Style().theme_use(f'forest-{theme}')
 
         self.values = {}
@@ -149,6 +150,10 @@ class GUI:
         buttons_window.pack(fill=tk.BOTH, expand=True)
 
         self.window.tkraise()
+
+    def get_theme_path(self, theme: str) -> str:
+        relative_path = os.path.join("gui", "themes", f"forest-{theme}.tcl")
+        return self.config.get_resource_path(relative_path)
 
     def add_variable(self, name):
         self.values[name] = tk.BooleanVar()
@@ -387,4 +392,3 @@ class GUI:
 
     def get_stop_flag(self):
         return self.stop_flag.get()
-        

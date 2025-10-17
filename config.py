@@ -40,7 +40,7 @@ class Config:
         self.logger = self.create_logger()
 
         language: str = self.get_value(self.Settings.LANGUAGE) # get the language set in the config
-        self.translation = gettext.translation('messages', 'languages', [language, 'en_US'], fallback=True)
+        self.translation = gettext.translation('messages', self.get_resource_path('languages'), [language, 'en_US'], fallback=True)
         self.translation.install()
         
     def create_default_config(self):
@@ -98,7 +98,7 @@ class Config:
         self.config.read(self.config_path)
 
         language: str = self.get_value(self.Settings.LANGUAGE) # get the language set in the config
-        self.translation = gettext.translation('messages', 'languages', [language, 'en_US'], fallback=True)
+        self.translation = gettext.translation('messages', self.get_resource_path('languages'), [language, 'en_US'], fallback=True)
         self.translation.install()
 
         self._new_config = None
@@ -140,7 +140,7 @@ class Config:
         return Locale.parse(lang_code).get_display_name()
     
     def get_languages(self):
-        lang_codes = [code.name for code in os.scandir('languages') if code.is_dir()]
+        lang_codes = [code.name for code in os.scandir(self.get_resource_path('languages')) if code.is_dir()]
         languages = [Locale.parse(code).get_display_name() for code in lang_codes]
 
         return languages
@@ -149,7 +149,7 @@ class Config:
         if language.strip() == '':
             return 'en_US'
         
-        lang_codes = [code.name for code in os.scandir('languages') if code.is_dir()]
+        lang_codes = [code.name for code in os.scandir(self.get_resource_path('languages')) if code.is_dir()]
         languages = [Locale.parse(code).get_display_name() for code in lang_codes]
         return lang_codes[languages.index(language)]
     
@@ -175,6 +175,36 @@ class Config:
         path.mkdir(parents=True, exist_ok=True)
 
         return path
+    
+    def get_resource_path(self, relative_path: str) -> str:
+        """
+        Get the absolute path to a resource file.
+        It searches in common locations for development, installation, and packaging.
+        """
+        # Path for PyInstaller bundles
+        if hasattr(sys, '_MEIPASS'):
+            base_path = getattr(sys, '_MEIPASS')
+            path = os.path.join(base_path, relative_path)
+            if os.path.exists(path):
+                return path
+
+        # Path for local development (running from project root)
+        # Assumes the script is run from the project root directory.
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), relative_path)
+        if os.path.exists(path):
+            return path
+
+        # Path for installation via pip/venv
+        path = os.path.join(sys.prefix, "share", "mkv-subtitle-converter", relative_path)
+        if os.path.exists(path):
+            return path
+
+        # Path for system-wide installation (e.g., Debian package)
+        path = os.path.join("/usr/share/mkv-subtitle-converter", relative_path)
+        if os.path.exists(path):
+            return path
+
+        raise FileNotFoundError(f"Resource file not found: {relative_path}")
     
     def create_logger(self):
         self.logger = logging.getLogger(__name__)
