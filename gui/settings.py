@@ -126,7 +126,14 @@ class GraphicsSettings(SettingsFrame):
         # variables
         self.theme = tk.StringVar()
 
-        self.theme.set(self.config.get_value(Config.Settings.THEME))
+        # Map from config value to translated value for display
+        theme_value = self.config.get_value(Config.Settings.THEME)
+        if theme_value == 'light':
+            self.theme.set(self.translate("Light"))
+        elif theme_value == 'dark':
+            self.theme.set(self.translate("Dark"))
+        else:
+            self.theme.set(self.translate("Auto"))
 
         # gui
         theme_label = ttk.Label(self, text=self.translate("Theme:"))
@@ -136,8 +143,17 @@ class GraphicsSettings(SettingsFrame):
         theme_list.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
 
     def save_settings(self):
+        # Map from translated value back to config value for saving
+        theme_value = self.theme.get()
+        if theme_value == self.translate("Light"):
+            theme_to_save = "light"
+        elif theme_value == self.translate("Dark"):
+            theme_to_save = "dark"
+        else:
+            theme_to_save = "auto"
+
         settings = {
-            Config.Settings.THEME: self.theme.get()
+            Config.Settings.THEME: theme_to_save
         }
 
         self.config.save_settings(settings)

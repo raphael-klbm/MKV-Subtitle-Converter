@@ -190,7 +190,7 @@ class Config:
 
         # Path for local development (running from project root)
         # Assumes the script is run from the project root directory.
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), relative_path)
+        path = os.path.join(os.path.dirname(__file__), relative_path)
         if os.path.exists(path):
             return path
 
