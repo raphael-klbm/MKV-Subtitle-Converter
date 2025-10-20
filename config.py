@@ -30,14 +30,14 @@ class Config:
         return cls.config
 
     def _initialize_config(self):
+        self.logger = self.create_logger()
+
         self.config_path = str(self.get_datadir() / 'config.ini')
         self.config = configparser.ConfigParser()
         self.config.read(self.config_path)
         self.create_default_config()
         self._new_config.read(self.config_path)
         self.save_config()
-
-        self.logger = self.create_logger()
 
         language: str = self.get_value(self.Settings.LANGUAGE) # get the language set in the config
         self.translation = gettext.translation('messages', self.get_resource_path('languages'), [language, 'en_US'], fallback=True)
