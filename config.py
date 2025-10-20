@@ -192,16 +192,19 @@ class Config:
         # Assumes the script is run from the project root directory.
         path = os.path.join(os.path.dirname(__file__), relative_path)
         if os.path.exists(path):
+            self.logger.debug(f"Found resource file (local): {path}")
             return path
 
         # Path for installation via pip/venv
         path = os.path.join(sys.prefix, "share", "mkv-subtitle-converter", relative_path)
         if os.path.exists(path):
+            self.logger.debug(f"Found resource file (pip/venv): {path}")
             return path
 
         # Path for system-wide installation (e.g., Debian package)
         path = os.path.join("/usr/share/mkv-subtitle-converter", relative_path)
         if os.path.exists(path):
+            self.logger.debug(f"Found resource file (system-wide): {path}")
             return path
 
         raise FileNotFoundError(f"Resource file not found: {relative_path}")
