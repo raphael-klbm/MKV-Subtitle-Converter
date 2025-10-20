@@ -228,7 +228,7 @@ class Config:
     def get_theme(self):
         theme = self.get_value(self.Settings.THEME)
 
-        if theme == 'Auto':
+        if theme.lower() == 'auto':
             theme = 'Dark' if darkdetect.isDark() else 'Light'
 
         return theme.lower()
