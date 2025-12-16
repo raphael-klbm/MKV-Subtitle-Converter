@@ -2,14 +2,16 @@ from threading import Thread
 import backend.helper as subhelper
 import os
 import pytesseract
-import backend.pgsreader as pgsreader
-from backend.imagemaker import ImageMaker
+import backend.pgs.pgsreader as pgsreader
+from backend.pgs.imagemaker import ImageMaker
 from tqdm import tqdm
 from pysrt import SubRipFile, SubRipItem, SubRipTime
 import backend.srtchecker as srtchecker
 import pysubs2
 from controller.sub_formats import SubtitleFileEndings
 from config import Config
+from vob.vob_sub_parser import VobSubParser
+from vob.vob_sub_merge_pack import VobSubMergedPack
 
 
 class SubtitleConverter:
@@ -39,9 +41,14 @@ class SubtitleConverter:
             lang_code = self.subtitle_languages[id]
             language = self.__get_lang(lang_code)
 
-            thread = Thread(name=f"Convert subtitle #{id}", target=self.__convert_to_srt, args=(language, id))
-            thread.start()
-            thread_pool.append(thread)
+            if os.path.exists(os.path.join(self.sub_dir, f'{id}.sup')):
+                thread = Thread(name=f"Convert subtitle #{id}", target=self.__convert_sup_to_srt, args=(language, id))
+                thread.start()
+                thread_pool.append(thread)
+            elif os.path.exists(os.path.join(self.sub_dir, f'{id}.sub')):
+                thread = Thread(name=f"Convert subtitle #{id}", target=self.__convert_sub_to_srt, args=(language, id))
+                thread.start()
+                thread_pool.append(thread)
 
         for thread in thread_pool:
             thread.join()
@@ -75,7 +82,7 @@ class SubtitleConverter:
             self.config.logger.warning(f'Language "{lang_code}" is not installed, using English instead.')
             return None
 
-    def __convert_to_srt(self, lang:str, track_id: int):
+    def __convert_sup_to_srt(self, lang:str, track_id: int):
         srt_file = os.path.join(self.sub_dir, f'{track_id}.srt')
         pgs_file = os.path.join(self.sub_dir, f'{track_id}.sup')
 
@@ -97,6 +104,72 @@ class SubtitleConverter:
 
         if pgsreader.exit_code != 0:
             return
+        
+        if self.continue_flag is False:
+            return
+
+        # building SRT file from DisplaySets
+        sub_text = ""
+        sub_start = 0
+        sub_index = 0
+        im = ImageMaker(self.text_brightness_diff)
+        progress_bar = tqdm(all_sets, unit=" ds")
+        for ds in progress_bar:
+            if ds.has_image:
+                pds = ds.pds[0] # get Palette Definition Segment
+                ods = ds.ods[0] # get Object Definition Segment
+                img = im.make_image(ods, pds)
+
+                # TODO add exit code check for ImageMaker
+                
+                if self.keep_imgs:
+                    img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
+                
+                sub_text = pytesseract.image_to_string(img, lang)
+                sub_start = ods.presentation_timestamp
+            else:
+                start_time = SubRipTime(milliseconds=int(sub_start))
+                end_time = SubRipTime(milliseconds=int(ds.end[0].presentation_timestamp))
+                srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
+                sub_index += 1
+
+        self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
+        srt.save(srt_file) # save as SRT file
+
+        # remove \f and new double empty lines from file
+        # with open(srt_file, "r") as file:
+        #     content = file.read()
+
+        # content = content.replace("\f", "\n")
+        # content = re.sub(r'\n\s*\n', '\n\n', content)
+
+        # with open(srt_file, "w") as file:
+        #     file.write(content)
+
+        srtchecker.check_srt(srt_file, True) # check SRT file for common OCR mistakes
+
+    
+    def __convert_sub_to_srt(self, lang:str, track_id: int):
+        sub_file = os.path.join(self.sub_dir, f'{track_id}.sub')
+        idx_file = os.path.join(self.sub_dir, f'{track_id}.idx')
+        srt_file = os.path.join(self.sub_dir, f'{track_id}.srt')
+
+        # extracted subtitle was already srt
+        if (not os.path.exists(sub_file)) and os.path.exists(srt_file):
+            return
+
+        open(srt_file, "w").close() # create empty SRT file
+
+        vob_sub_parser = VobSubParser(True)
+        srt = SubRipFile()
+        
+        if self.keep_imgs:
+            track_img_dir = self.img_dir / str(track_id)
+            track_img_dir.mkdir(parents=True, exist_ok=True)
+
+        vob_sub_parser.open_sub_idx(str(sub_file), str(idx_file))
+        _vob_sub_merged_pack_list = vob_sub_parser.merge_vob_sub_packs()
+        _palette = vob_sub_parser.idx_palette
         
         if self.continue_flag is False:
             return
