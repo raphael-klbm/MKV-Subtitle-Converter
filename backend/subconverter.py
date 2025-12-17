@@ -10,8 +10,12 @@ import backend.srtchecker as srtchecker
 import pysubs2
 from controller.sub_formats import SubtitleFileEndings
 from config import Config
-from vob.vob_sub_parser import VobSubParser
-from vob.vob_sub_merge_pack import VobSubMergedPack
+from backend.vob.vob_sub_parser import VobSubParser
+from backend.vob.vob_sub_merge_pack import VobSubMergedPack
+from pathlib import Path
+import numpy as np
+from PIL import Image
+from datetime import timedelta
 
 
 class SubtitleConverter:
@@ -148,6 +152,33 @@ class SubtitleConverter:
 
         srtchecker.check_srt(srt_file, True) # check SRT file for common OCR mistakes
 
+
+    def process_pack(self, id_pack: int, pack: VobSubMergedPack, folder_path: Path, palette: list[str]) -> tuple[Path, Image.Image]:
+        image_path = folder_path / f'{id_pack + 1}.png'
+        img = self.extract_subtitle_image_from_pack(pack, palette)
+        img = Image.fromarray((img * 255).astype('uint8'), 'RGB')
+        # image.imsave(image_path, (img * 255).astype('uint8'))
+        subfile_text = self.create_subfile_text(id_pack, pack, image_path)
+        return subfile_text, img
+
+    def create_subfile_text(self, pack_id, pack: VobSubMergedPack, image_path: Path):
+        # result = f"{pack_id + 1}\n" + \
+        #     f"{pack.start_time.get_str_format()} --> {pack.end_time.get_str_format()}\n" + \
+        #     f"{image_path}\n\n"
+        # print(result)
+        
+        result = (pack.start_time / timedelta(milliseconds=1), pack.end_time / timedelta(milliseconds=1))
+        return result
+
+
+    def extract_subtitle_image_from_pack(self, pack: VobSubMergedPack, palette: list[str]) -> np.ndarray :
+        pack.palette = palette
+        img = pack.get_bitmap()
+        # Resize image to make sure we don't keep large empty space
+        x, y, _ = np.where(img > 0)
+        img = img[max(np.min(x) - 25, 0):np.max(x) + 25, max(np.min(y) - 25, 0): np.max(y) + 25]
+        return img
+
     
     def __convert_sub_to_srt(self, lang:str, track_id: int):
         sub_file = os.path.join(self.sub_dir, f'{track_id}.sub')
@@ -178,28 +209,21 @@ class SubtitleConverter:
         sub_text = ""
         sub_start = 0
         sub_index = 0
-        im = ImageMaker(self.text_brightness_diff)
-        progress_bar = tqdm(all_sets, unit=" ds")
-        for ds in progress_bar:
-            if ds.has_image:
-                pds = ds.pds[0] # get Palette Definition Segment
-                ods = ds.ods[0] # get Object Definition Segment
-                img = im.make_image(ods, pds)
 
-                # TODO add exit code check for ImageMaker
-                
-                if self.keep_imgs:
-                    img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
-                
-                sub_text = pytesseract.image_to_string(img, lang)
-                sub_start = ods.presentation_timestamp
-            else:
-                start_time = SubRipTime(milliseconds=int(sub_start))
-                end_time = SubRipTime(milliseconds=int(ds.end[0].presentation_timestamp))
-                srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
-                sub_index += 1
+        for id_pack, pack in enumerate(tqdm(_vob_sub_merged_pack_list)):
+            subfile_text, img = self.process_pack(id_pack, pack, track_img_dir, _palette)
+            sub_start, sub_end = subfile_text
+            
+            if self.keep_imgs:
+                img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
+            
+            sub_text = pytesseract.image_to_string(img, lang)
+            start_time = SubRipTime(sub_start)
+            end_time = SubRipTime(sub_end)
+            srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
+            sub_index += 1
 
-        self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
+        # self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
         srt.save(srt_file) # save as SRT file
 
         # remove \f and new double empty lines from file
