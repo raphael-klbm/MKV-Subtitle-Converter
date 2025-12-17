@@ -166,8 +166,8 @@ class SubtitleConverter:
         #     f"{pack.start_time.get_str_format()} --> {pack.end_time.get_str_format()}\n" + \
         #     f"{image_path}\n\n"
         # print(result)
-        
-        result = (pack.start_time / timedelta(milliseconds=1), pack.end_time / timedelta(milliseconds=1))
+
+        result = (pack.start_time / timedelta(seconds=1), pack.end_time / timedelta(seconds=1))
         return result
 
 
@@ -218,8 +218,8 @@ class SubtitleConverter:
                 img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
             
             sub_text = pytesseract.image_to_string(img, lang)
-            start_time = SubRipTime(sub_start)
-            end_time = SubRipTime(sub_end)
+            start_time = SubRipTime(seconds=sub_start)
+            end_time = SubRipTime(seconds=sub_end)
             srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
             sub_index += 1
 
