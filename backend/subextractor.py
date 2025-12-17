@@ -95,8 +95,8 @@ class SubExtractor:
 
 
     # helper function for threading
-    def __extract(self, track_id: int, file_ending: str, times: list[int], finished: list[bool]):
-        file_path = Path(self.sub_dir, f"{track_id}.{file_ending}")
+    def __extract(self, file_id: int, track_id: int, file_ending: str, times: list[int], finished: list[bool]):
+        file_path = Path(self.sub_dir, f"{file_id}.{file_ending}")
         
         if file_ending == 'sup':
             command = [
@@ -166,7 +166,7 @@ class SubExtractor:
                 continue
             
             current_times.append(0)
-            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, 'sup', current_times, finished))
+            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, i, 'sup', current_times, finished))
             finished.append(False)
             thread.start()
             thread_pool.append(thread)
@@ -191,6 +191,7 @@ class SubExtractor:
             self.sub_dir.mkdir(parents=True, exist_ok=True)
 
         for i, subtitle in enumerate(subtitle_streams):
+            index = subtitle['index']
 
             # calculate total timelength of subtitles
             if 'tags' in subtitle and any('duration' == key.lower() for key in subtitle['tags']):
@@ -208,11 +209,11 @@ class SubExtractor:
             self.subtitle_counter += 1
 
             # skip if subtitle already exists
-            if os.path.exists(str(self.sub_dir / f'{self.subtitle_counter - 1}.sub')):
+            if os.path.exists(str(self.sub_dir / f'{index}.sub')):
                 continue
             
             current_times.append(0)
-            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, 'sub', current_times, finished))
+            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, index, 'sub', current_times, finished))
             finished.append(False)
             thread.start()
             thread_pool.append(thread)
