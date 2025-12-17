@@ -76,7 +76,7 @@ class SubExtractor:
         return -1
     
 
-    def __get_seconds_progress_from_mkvextract_output(self, line: str) -> float:
+    def __get_progress_from_mkvextract_output(self, line: str) -> float:
         line = line.strip()
 
         if ":" in line:
@@ -120,13 +120,13 @@ class SubExtractor:
 
         for line in iter(process.stderr.readline, ''):
             if file_ending == 'sup':
-                times[track_id] = self.__get_seconds_progress_from_ffmpeg_output(line)
+                times[file_id] = self.__get_seconds_progress_from_ffmpeg_output(line)
             elif file_ending == 'sub':
                 # TODO: instead of percentage put time in list
-                times[track_id] == self.__get_seconds_progress_from_mkvextract_output(line)
+                times[file_id] = self.__get_progress_from_mkvextract_output(line)
 
         process.wait()
-        finished[track_id] = True
+        finished[file_id] = True
 
 
     def __extract_sup_subtitles(self) -> list[int]:
@@ -213,6 +213,7 @@ class SubExtractor:
                 continue
             
             current_times.append(0)
+            # TODO: Fix IndexError
             thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, index, 'sub', current_times, finished))
             finished.append(False)
             thread.start()
@@ -259,7 +260,7 @@ class SubExtractor:
                 continue
             
             current_times.append(0)
-            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, 'srt', current_times, finished))
+            thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, i, 'srt', current_times, finished))
             finished.append(False)
             thread.start()
             thread_pool.append(thread)
