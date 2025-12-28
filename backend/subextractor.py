@@ -98,7 +98,7 @@ class SubExtractor:
     def __extract(self, file_id: int, track_id: int, file_ending: str, times: list[int], finished: list[bool]):
         file_path = Path(self.sub_dir, f"{file_id}.{file_ending}")
         
-        if file_ending == 'sup':
+        if file_ending in ['sup', 'srt']:
             command = [
                 "ffmpeg",
                 "-y",
