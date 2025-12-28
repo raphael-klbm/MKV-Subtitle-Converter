@@ -153,15 +153,14 @@ class SubtitleConverter:
         srtchecker.check_srt(srt_file, True) # check SRT file for common OCR mistakes
 
 
-    def process_pack(self, id_pack: int, pack: VobSubMergedPack, folder_path: Path, palette: list[str]) -> tuple[Path, Image.Image]:
-        image_path = folder_path / f'{id_pack + 1}.png'
+    def process_pack(self, pack: VobSubMergedPack, palette: list[str]) -> tuple[Path, Image.Image]:
         img = self.extract_subtitle_image_from_pack(pack, palette)
         img = Image.fromarray((img * 255).astype('uint8'), 'RGB')
         # image.imsave(image_path, (img * 255).astype('uint8'))
-        subfile_text = self.create_subfile_text(id_pack, pack, image_path)
+        subfile_text = self.create_subfile_text(pack)
         return subfile_text, img
 
-    def create_subfile_text(self, pack_id, pack: VobSubMergedPack, image_path: Path):
+    def create_subfile_text(self, pack: VobSubMergedPack):
         # result = f"{pack_id + 1}\n" + \
         #     f"{pack.start_time.get_str_format()} --> {pack.end_time.get_str_format()}\n" + \
         #     f"{image_path}\n\n"
@@ -210,8 +209,8 @@ class SubtitleConverter:
         sub_start = 0
         sub_index = 0
 
-        for id_pack, pack in enumerate(tqdm(_vob_sub_merged_pack_list)):
-            subfile_text, img = self.process_pack(id_pack, pack, track_img_dir, _palette)
+        for pack in tqdm(_vob_sub_merged_pack_list):
+            subfile_text, img = self.process_pack(pack, _palette)
             sub_start, sub_end = subfile_text
             
             if self.keep_imgs:
