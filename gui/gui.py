@@ -299,7 +299,7 @@ class GUI:
         logging.info("Checking for updates.")
 
         try:
-            response = requests.get("https://api.github.com/repos/Kleeraphie/MKV-Subtitle-Converter/releases/latest")
+            response = requests.get("https://api.github.com/repos/raphael-klbm/MKV-Subtitle-Converter/releases/latest")
             latest_version = response.json()["tag_name"]
 
             return (Version(latest_version) > Version(self.config.get_version()), latest_version)
@@ -310,9 +310,9 @@ class GUI:
         update_available, latest_version = self.update_available()
 
         if update_available:
-            update = tk.messagebox.askyesno(self.translate("Update available"), self.translate("Version {latest_version} is available. Do you want to download it?").format(latest_version))
+            update = tk.messagebox.askyesno(self.translate("Update available"), self.translate("Version {latest_version} is available. Do you want to download it?").format(latest_version=latest_version))
             if update:
-                webbrowser.open('https://github.com/Kleeraphie/MKV-Subtitle-Converter/releases/latest')
+                webbrowser.open('https://github.com/raphael-klbm/MKV-Subtitle-Converter/releases/latest')
 
     def reload(self):
         self.reloaded = True
