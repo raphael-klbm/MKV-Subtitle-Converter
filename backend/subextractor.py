@@ -129,6 +129,21 @@ class SubExtractor:
         finished[file_id] = True
 
 
+    def calculate_subtitle_duration(self, start_time: datetime, subtitle: dict) -> float:
+        if 'tags' in subtitle and any('duration' in key.lower() for key in subtitle['tags']):
+            subtitle_time_key = [key for key in subtitle['tags'] if 'duration' in key.lower()][0]
+            subtitle_time = subtitle['tags'][subtitle_time_key]
+            subtitle_time = subtitle_time.split('.')[0]  # remove milliseconds
+            subtitle_time = subtitle_time.split(',')[0]  # remove milliseconds (if comma is used instead of dot)
+            subtitle_time = datetime.strptime(subtitle_time, "%H:%M:%S")
+            subtitle_time = subtitle_time - start_time
+            subtitle_time = subtitle_time.total_seconds()
+        else:
+            subtitle_time = 0.0
+            
+        return subtitle_time
+
+
     def __extract_sup_subtitles(self) -> list[int]:
         thread_pool = []
 
@@ -147,16 +162,7 @@ class SubExtractor:
         for i, subtitle in enumerate(subtitle_streams):
 
             # calculate total timelength of subtitles
-            if 'tags' in subtitle and any('duration' in key.lower() for key in subtitle['tags']):
-                subtitle_time_key = [key for key in subtitle['tags'] if 'duration' in key.lower()][0]
-                subtitle_time = subtitle['tags'][subtitle_time_key]
-                subtitle_time = subtitle_time.split('.')[0]  # remove milliseconds
-                subtitle_time = datetime.strptime(subtitle_time, "%H:%M:%S")
-                subtitle_time = subtitle_time - start_time
-                subtitle_time = subtitle_time.total_seconds()
-            else:
-                subtitle_time = 0
-
+            subtitle_time = self.calculate_subtitle_duration(start_time, subtitle)
             total_time += subtitle_time
 
             self.subtitle_counter += 1
@@ -194,16 +200,7 @@ class SubExtractor:
             index = subtitle['index']
 
             # calculate total timelength of subtitles
-            if 'tags' in subtitle and any('duration' == key.lower() for key in subtitle['tags']):
-                subtitle_time_key = [key for key in subtitle['tags'] if 'duration' in key.lower()][0]
-                subtitle_time = subtitle['tags'][subtitle_time_key]
-                subtitle_time = subtitle_time.split('.')[0]  # remove milliseconds
-                subtitle_time = datetime.strptime(subtitle_time, "%H:%M:%S")
-                subtitle_time = subtitle_time - start_time
-                subtitle_time = subtitle_time.total_seconds()
-            else:
-                subtitle_time = 0
-
+            subtitle_time = self.calculate_subtitle_duration(start_time, subtitle)
             total_time += subtitle_time
 
             self.subtitle_counter += 1
@@ -241,16 +238,7 @@ class SubExtractor:
         for i, subtitle in enumerate(subtitle_streams):
 
             # calculate total timelength of subtitles
-            if 'tags' in subtitle and any('duration' in key.lower() for key in subtitle['tags']):
-                subtitle_time_key = [key for key in subtitle['tags'] if 'duration' in key.lower()][0]
-                subtitle_time = subtitle['tags'][subtitle_time_key]
-                subtitle_time = subtitle_time.split('.')[0]  # remove milliseconds
-                subtitle_time = datetime.strptime(subtitle_time, "%H:%M:%S")
-                subtitle_time = subtitle_time - start_time
-                subtitle_time = subtitle_time.total_seconds()
-            else:
-                subtitle_time = 0
-
+            subtitle_time = self.calculate_subtitle_duration(start_time, subtitle)
             total_time += subtitle_time
 
             self.subtitle_counter += 1
