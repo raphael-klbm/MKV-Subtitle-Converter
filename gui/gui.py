@@ -12,6 +12,7 @@ import webbrowser
 import logging
 from controller.jobs import Jobs
 import time
+import sys
 
 class GUI:
     
@@ -28,13 +29,30 @@ class GUI:
 
         self.window = tk.Tk()
 
-        self.scaling = self.window.winfo_fpixels('1i') / 72.0
-        self.window.tk.call('tk', 'scaling', self.scaling)
+        if sys.platform.startswith("win"):
+            import ctypes
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            except:
+                ctypes.windll.user32.SetProcessDPIAware()
+            
+            dpi = ctypes.windll.user32.GetDpiForSystem()
+            self.scaling = dpi / 96.0
+        elif sys.platform.startswith("darwin"):
+            from AppKit import NSScreen
+            screen = NSScreen.mainScreen()
+            self.scaling = screen.backingScaleFactor()
+        else: # linux
+            self.scaling = self.window.winfo_fpixels('1i') / 72.0
+
+        tk_internal_scaling = (self.scaling * 96.0) / 72.0
+
+        self.window.tk.call('tk', 'scaling', tk_internal_scaling)
 
         width = int(500 * self.scaling)
         height = int(720 * self.scaling)
 
-        self.window.geometry(newGeometry=f"{width}x{height}+0+0")
+        self.window.geometry(f"{width}x{height}+0+0")
         self.window.title("MKV Subtitle Converter")
         self.create_menu()
 
