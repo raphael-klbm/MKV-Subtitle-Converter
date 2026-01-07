@@ -174,7 +174,11 @@ class SubtitleConverter:
         pack.palette = palette
         img = pack.get_bitmap()
         # Resize image to make sure we don't keep large empty space
-        x, y, _ = np.where(img > 0)
+        # if more pixels are 1 instead of 0, use img < 1 instead of img > 0 to find the area with content
+        if np.mean(img) > 0.5:
+            x, y, _ = np.where(img < 1)
+        else:
+            x, y, _ = np.where(img > 0)
         img = img[max(np.min(x) - 25, 0):np.max(x) + 25, max(np.min(y) - 25, 0): np.max(y) + 25]
         return img
 
