@@ -5,7 +5,6 @@ import numpy as np
 
 from .utils import get_endian_word, Rectangle
 from .utils import custom_timedelta as timedelta
-from .custom_color import CustomColor as Color
 
 class SubPicture:
 # Subtitle Picture - see http:#www.mpucoder.com/DVD/spu.html for more info
@@ -47,11 +46,11 @@ class SubPicture:
 
     def get_bitmap(
         self,
-        color_lookup_table: List[Color],
-        background: Color,
-        pattern: Color,
-        emphasis1: Color,
-        emphasis2: Color,
+        color_lookup_table: List[tuple[int, ...]],  # tuple[int, ...] instead of PIL.ImageColor
+        background: tuple[int, ...],
+        pattern: tuple[int, ...],
+        emphasis1: tuple[int, ...],
+        emphasis2: tuple[int, ...],
         use_custom_colors: bool,
         crop: bool = True
     ) -> np.ndarray:
@@ -73,8 +72,8 @@ class SubPicture:
     def parse_display_control_commands(
         self,
         create_bitmap: bool,
-        color_look_up_table: List[Color],
-        four_colors: List[Color],
+        color_look_up_table: List[tuple[int, ...]],
+        four_colors: List[tuple[int, ...]],
         use_custom_colors: bool,
         crop: bool
     ) -> np.ndarray:
@@ -174,10 +173,10 @@ class SubPicture:
 
     @staticmethod
     def set_color(
-        four_colors: List[Color],
+        four_colors: List[tuple[int, ...]],
         four_color_index: int,
         clut_index: int,
-        color_look_up_table: List[Color]
+        color_look_up_table: List[tuple[int, ...]]
     ) -> None:
 
         if clut_index >= 0 and clut_index < len(color_look_up_table) and four_color_index >= 0:
@@ -186,14 +185,14 @@ class SubPicture:
 
     @staticmethod
     def set_transparency(
-        four_colors: List[Color],
+        four_colors: List[tuple[int, ...]],
         four_color_index: int,
         alpha: int
     ):
         # alpha: 0x0 = transparent, 0xF = opaque (in C# 0 is fully transparent, and 255 is fully opaque so we have to multiply by 17)
         if (four_color_index >= 0):
-            # four_colors[four_color_index] = Color(rgba=(alpha * 17, four_colors[four_color_index].red, four_colors[four_color_index].green, four_colors[four_color_index].blue))
-            four_colors[four_color_index] = Color(rgb=(four_colors[four_color_index].red, four_colors[four_color_index].green, four_colors[four_color_index].blue))
+            r, g, b = four_colors[four_color_index][:3]
+            four_colors[four_color_index] = (int(r * 255), int(g * 255), int(b * 255))
         return four_colors
 
     def generate_bitmap(
@@ -201,7 +200,7 @@ class SubPicture:
         image_display_area: Rectangle,
         image_top_field_data_address: int,
         image_bottom_field_data_address: int,
-        four_colors: List[Color],
+        four_colors: List[tuple[int, ...]],
         crop: bool
     ) -> np.ndarray:
         if image_display_area.width <= 0 and image_display_area.height <= 0:
@@ -209,7 +208,7 @@ class SubPicture:
 
         img = np.zeros([image_display_area.height, image_display_area.width, 3])
         # initialize the bg color
-        img = img + list(four_colors[0].rgb)
+        img = img + list(four_colors[0][:3])
 
         img = self.generate_fast_bitmap(self._data, img, 0, image_top_field_data_address, four_colors, 2)
         img = self.generate_fast_bitmap(self._data, img, 1, image_bottom_field_data_address, four_colors, 2)
@@ -220,12 +219,12 @@ class SubPicture:
     @staticmethod
     def crop_bitmap_and_unlock(
         img: np.ndarray,
-        background_color: Color,
+        background_color: tuple[int, ...],
         crop: bool
     ) -> np.ndarray:
         y = 0
-        c: Color = background_color
-        background_argb = list(background_color.rgb)
+        c: tuple[int, ...] = background_color
+        background_argb = list(background_color)
         min_x = 0
         max_x = 0
         min_y = 0
@@ -303,7 +302,7 @@ class SubPicture:
         return img
 
     @staticmethod
-    def is_background_color(c: Color, background_argb: int) -> bool:
+    def is_background_color(c: tuple[int, ...], background_argb: int) -> bool:
         return c == background_argb
 
     @staticmethod
@@ -312,14 +311,14 @@ class SubPicture:
         img: np.ndarray,
         startY: int,
         data_address: int,
-        four_colors: List[Color],
+        four_colors: List[tuple[int, ...]],
         addY: int
     ) -> None:
         index = 0
         only_half = False
         y = startY
         x = 0
-        color_zero_value = four_colors[0].hex
+        color_zero_value = four_colors[0]
         img_heigt = img.shape[0]
         img_width = img.shape[1]
         while y < img_heigt and data_address + index + 2 < len(data):
@@ -328,11 +327,11 @@ class SubPicture:
             if rest_of_line:
                 run_length = img_width - x
 
-            c: Color = four_colors[color] # set color via the four colors
+            c: tuple[int, ...] = four_colors[color] # set color via the four colors
             for i in range(run_length):
                 if x >= img_width - 1:
                     if y < img_heigt and x < img_width and c != four_colors[0]:
-                        img[y, x] = list(c.rgb)
+                        img[y, x] = list(c)
 
                     if only_half:
                         only_half = False
@@ -340,8 +339,8 @@ class SubPicture:
                     x = 0
                     y += addY
                     break
-                if y < img_heigt and c.hex != color_zero_value:
-                    img[y, x] = list(c.rgb)
+                if y < img_heigt and c != color_zero_value:
+                    img[y, x] = list(c[:3])
                 x+=1
         return img
 

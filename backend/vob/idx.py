@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 import re
+from PIL import ImageColor
 
-from .custom_color import CustomColor as Color
 from .utils import custom_timedelta as timedelta
 
 
@@ -66,20 +66,15 @@ class Idx:
 
 
     def hex_to_color(self, hex_str: str):
-        hex_str = hex_str.strip('#').strip()
-        if (len(hex_str) == 6):
-            r = int(hex_str[0: 2], 16) / 255
-            g = int(hex_str[2: 4], 16) / 255
-            b = int(hex_str[4: 6], 16) / 255
-            return Color(rgb=(r, g, b))
-
-        elif (len(hex_str) == 8):
-            a = int(hex_str[0: 2], 16)
-            r = int(hex_str[2: 4], 16)
-            g = int(hex_str[4: 6], 16)
-            b = int(hex_str[6: 8], 16)
-            return Color(rgba=(r, g, b, a))
-        return Color("red")
+        # Ensure the hex string starts with '#'
+        if not hex_str.startswith('#'):
+            hex_str = f"#{hex_str}"
+        
+        # ImageColor.getrgb returns a tuple like (R, G, B) or (R, G, B, A)
+        try:
+            return ImageColor.getrgb(hex_str)
+        except ValueError:
+            return ImageColor.getcolor("red") # Fallback for invalid hex strings
 
 
     def get_time_code_and_file_position(self, line: str) -> IdxParagraph:

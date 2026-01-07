@@ -1,12 +1,11 @@
 
 from typing import Tuple
-
 import numpy as np
+from PIL import ImageColor
 
 from .idx import IdxParagraph
 from .sub_picture import SubPicture
 from .utils import timedelta as timedelta
-from .custom_color import CustomColor as Color
 
 class VobSubMergedPack: #IBinaryParagraphWithPosition
     def __init__(self, sub_picture_data: bytearray, presentation_time_stamp: timedelta, stream_id: int, idx_line: IdxParagraph):
@@ -21,7 +20,7 @@ class VobSubMergedPack: #IBinaryParagraphWithPosition
         return self.sub_picture.forced
 
     def get_bitmap(self) -> np.ndarray:
-        return self.sub_picture.get_bitmap(self.palette, Color("red"), Color("black"), Color("white"), Color("black"), False, True)
+        return self.sub_picture.get_bitmap(self.palette, ImageColor.getrgb("red"), ImageColor.getrgb("black"), ImageColor.getrgb("white"), ImageColor.getrgb("black"), False, True)
         # return self.sub_picture.get_bitmap(self.palette, Color.Transparent, Color("black"), Color("white"), Color("black"), False, True)
 
     def get_screen_size(self) -> Tuple:
