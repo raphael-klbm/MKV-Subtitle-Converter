@@ -307,14 +307,14 @@ class SubPicture:
     def generate_fast_bitmap(
         data: bytes,
         img: np.ndarray,
-        startY: int,
+        start_y: int,
         data_address: int,
         four_colors: List[tuple[int, ...]],
-        addY: int
+        add_y: int
     ) -> None:
         index = 0
         only_half = False
-        y = startY
+        y = start_y
         x = 0
         color_zero_value = four_colors[0]
         img_height = img.shape[0]
@@ -335,7 +335,7 @@ class SubPicture:
                         only_half = False
                         index += 1
                     x = 0
-                    y += addY
+                    y += add_y
                     break
                 if y < img_height and c != color_zero_value:
                     img[y, x] = list(c[:3])
