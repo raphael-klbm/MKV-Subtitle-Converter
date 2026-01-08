@@ -12,6 +12,7 @@ import webbrowser
 import logging
 from controller.jobs import Jobs
 import time
+import sys
 
 class GUI:
     
@@ -27,7 +28,31 @@ class GUI:
         self.edit_flag = None
 
         self.window = tk.Tk()
-        self.window.geometry(newGeometry="500x650+0+0")
+
+        if sys.platform.startswith("win"):
+            import ctypes
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            except:
+                ctypes.windll.user32.SetProcessDPIAware()
+            
+            dpi = ctypes.windll.user32.GetDpiForSystem()
+            self.scaling = dpi / 96.0
+        elif sys.platform.startswith("darwin"):
+            from AppKit import NSScreen
+            screen = NSScreen.mainScreen()
+            self.scaling = screen.backingScaleFactor()
+        else: # linux
+            self.scaling = self.window.winfo_fpixels('1i') / 72.0
+
+        tk_internal_scaling = (self.scaling * 96.0) / 72.0
+
+        self.window.tk.call('tk', 'scaling', tk_internal_scaling)
+
+        width = int(500 * self.scaling)
+        height = int(720 * self.scaling)
+
+        self.window.geometry(f"{width}x{height}+0+0")
         self.window.title("MKV Subtitle Converter")
         self.create_menu()
 
@@ -50,10 +75,10 @@ class GUI:
         selected_files_label = tk.Label(master=selection_window, text=self.translate("Selected files:"))
         self.selected_files_listbox = tk.Listbox(master=selection_window)
 
-        dir_button.grid(row=2, column=0, sticky="we", padx=5, pady=5)
+        dir_button.grid(row=2, column=0, sticky="we", padx=int(5*self.scaling), pady=int(5*self.scaling))
 
         selected_files_label.grid(row=0, column=0, sticky="w")
-        self.selected_files_listbox.grid(row=1, column=0, sticky="nsew", padx=(5, 5))
+        self.selected_files_listbox.grid(row=1, column=0, sticky="nsew", padx=(int(5*self.scaling), int(5*self.scaling)))
 
         self.selected_files_listbox.bind("<Double-Button-1>", lambda _: self.unselect_file())
         self.selected_files_listbox.bind("<Return>", lambda _: self.unselect_file())
@@ -71,10 +96,10 @@ class GUI:
         settings_label = tk.Label(master=settings_seperator_window, text=self.translate("Settings"), font=("Helvetica", 12, "bold"))
         settings_help_button = tk.Button(master=settings_seperator_window, text="?", command=lambda: self.show_run_settings_help_window())
         window_separator = ttk.Separator(master=self.window, orient="horizontal")
-        settings_label.grid(row=0, column=0, sticky="w", padx=5, pady=(15, 0))
-        settings_help_button.grid(row=0, column=1, sticky="e", padx=5, pady=(15, 0))
-        settings_seperator_window.pack(fill=tk.X, padx=5, pady=5)
-        window_separator.pack(fill=tk.X, padx=5, pady=5)  # TODO: put this in the settings_seperator_window
+        settings_label.grid(row=0, column=0, sticky="w", padx=int(5*self.scaling), pady=(int(15*self.scaling), 0))
+        settings_help_button.grid(row=0, column=1, sticky="e", padx=int(5*self.scaling), pady=(int(15*self.scaling), 0))
+        settings_seperator_window.pack(fill=tk.X, padx=int(5*self.scaling), pady=int(5*self.scaling))
+        window_separator.pack(fill=tk.X, padx=int(5*self.scaling), pady=int(5*self.scaling))  # TODO: put this in the settings_seperator_window
 
         # =====Settings window===== #
         # TODO: there is extra space between use_diff_langs and brightness_diff_label
@@ -87,7 +112,7 @@ class GUI:
         keep_old_subs = ttk.Checkbutton(master=job_settings_window, text=self.translate("Keep a copy of the old subtitle files"), variable=self.add_variable('keep_old_subs'))
         keep_new_subs = ttk.Checkbutton(master=job_settings_window, text=self.translate("Keep a copy of the new subtitle files"), variable=self.add_variable('keep_new_subs'))
         use_diff_langs = ttk.Checkbutton(master=job_settings_window, text=self.translate("Use different languages for some subtitles"), variable=self.add_variable('use_diff_langs'), command=lambda: self.change_visibility(self.diff_langs, self.values.get('use_diff_langs').get()))
-        self.diff_langs = tk.Text(master=job_settings_window, height=5, width=24)
+        self.diff_langs = tk.Text(master=job_settings_window, height=4, width=int(24*self.scaling))
         brightness_diff_label = ttk.Label(master=job_settings_window, text=self.translate("Allowed text color brightness deviation:"))
         self.brightness_diff = ttk.Scale(master=job_settings_window, from_=0, to=100, orient=tk.HORIZONTAL, command=lambda _: brightness_value_label.config(text=f'{int(self.brightness_diff.get())}%'))
         brightness_value_label = ttk.Label(master=job_settings_window)
@@ -98,14 +123,14 @@ class GUI:
         self.update_selections()
 
         subtitle_format_label.grid(row=0, column=0, sticky="w")
-        self.subtitle_format.grid(row=0, column=1, sticky="w", padx=5)
+        self.subtitle_format.grid(row=0, column=1, sticky="w", padx=int(5*self.scaling))
         edit_subtitles.grid(row=1, column=0, sticky="w", columnspan=3)
         save_images.grid(row=2, column=0, sticky="w", columnspan=3)
         keep_old_mkvs.grid(row=3, column=0, sticky="w", columnspan=3)
         keep_old_subs.grid(row=4, column=0, sticky="w", columnspan=3)
         keep_new_subs.grid(row=5, column=0, sticky="w", columnspan=3)
         use_diff_langs.grid(row=6, column=0, sticky="w", columnspan=3)
-        self.diff_langs.grid(row=7, column=0, sticky="w", padx=24, columnspan=3)
+        self.diff_langs.grid(row=7, column=0, sticky="w", padx=int(24*self.scaling), columnspan=3)
         self.change_visibility(self.diff_langs, self.values.get('use_diff_langs').get())
         brightness_diff_label.grid(row=8, column=0, sticky="w", columnspan=3)
         self.brightness_diff.grid(row=8, column=1, sticky="w")
@@ -143,9 +168,9 @@ class GUI:
         self.window.protocol('WM_DELETE_WINDOW', lambda: self.wait_var.set(1))
 
         window_separator = ttk.Separator(master=buttons_window, orient="horizontal")
-        window_separator.pack(fill=tk.X, padx=5, pady=15)
-        start_button.pack(side=tk.LEFT, expand=True, padx=5, pady=5)
-        exit_button.pack(side=tk.LEFT, expand=True, padx=5, pady=5)
+        window_separator.pack(fill=tk.X, padx=int(5*self.scaling), pady=int(15*self.scaling))
+        start_button.pack(side=tk.LEFT, expand=True, padx=int(5*self.scaling), pady=int(5*self.scaling))
+        exit_button.pack(side=tk.LEFT, expand=True, padx=int(5*self.scaling), pady=int(5*self.scaling))
 
         buttons_window.pack(fill=tk.BOTH, expand=True)
 
@@ -208,7 +233,7 @@ class GUI:
 
     def change_visibility(self, widget, visible: bool):
         if visible:
-            widget.grid(row=7, column=0, sticky="w", padx=24, columnspan=3) # TODO: move padding to the widget
+            widget.grid(row=7, column=0, sticky="w", padx=int(24*self.scaling), columnspan=3) # TODO: move padding to the widget
         else:
             widget.grid_forget()
 
@@ -256,7 +281,11 @@ class GUI:
     def show_run_settings_help_window(self):
         help_window = tk.Toplevel(self.window)
         help_window.title(self.translate("Help"))
-        help_window.geometry("500x500")
+
+        width = int(500 * self.scaling)
+        height = int(720 * self.scaling)
+
+        help_window.geometry(f"{width}x{height}")
         help_window.transient(self.window)
         help_window.resizable(False, False)
 
@@ -266,7 +295,7 @@ class GUI:
         help_window.geometry(f"+{x}+{y}")
 
         help_text = tk.Label(help_window, text=self.translate('Help for choosing the right settings'), font=("Helvetica", 12))
-        help_text.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        help_text.grid(row=0, column=0, padx=int(10*self.scaling), pady=int(10*self.scaling), sticky="nsew")
 
         self.run_settings_help_window_add_text(self.translate('Format of the new subtitles: '), self.translate('The format of your new subtitles. SRT is the most common format and is supported by most video players.'), help_window)
         self.run_settings_help_window_add_text(self.translate('Edit subtitles before muxing: '), self.translate('Before exchanging the subtitles with the new ones, the program will pause so that you can edit them. The program continues after pressing <Enter> in the console.'), help_window)
@@ -299,7 +328,7 @@ class GUI:
         logging.info("Checking for updates.")
 
         try:
-            response = requests.get("https://api.github.com/repos/Kleeraphie/MKV-Subtitle-Converter/releases/latest")
+            response = requests.get("https://api.github.com/repos/raphael-klbm/MKV-Subtitle-Converter/releases/latest")
             latest_version = response.json()["tag_name"]
 
             return (Version(latest_version) > Version(self.config.get_version()), latest_version)
@@ -310,9 +339,9 @@ class GUI:
         update_available, latest_version = self.update_available()
 
         if update_available:
-            update = tk.messagebox.askyesno(self.translate("Update available"), self.translate("Version {latest_version} is available. Do you want to download it?").format(latest_version))
+            update = tk.messagebox.askyesno(self.translate("Update available"), self.translate("Version {latest_version} is available. Do you want to download it?").format(latest_version=latest_version))
             if update:
-                webbrowser.open('https://github.com/Kleeraphie/MKV-Subtitle-Converter/releases/latest')
+                webbrowser.open('https://github.com/raphael-klbm/MKV-Subtitle-Converter/releases/latest')
 
     def reload(self):
         self.reloaded = True
@@ -360,10 +389,10 @@ class GUI:
             self.job_progress_label = tk.Label(self.progress_window, text=self.translate(f"Job: {self.job}"))
             self.job_progress_bar["value"] = Jobs.get_percentage(self.job)
 
-            self.video_progress_label.grid(row=0, column=0, padx=10, pady=(5, 3), sticky="w")
-            self.video_progress_bar.grid(row=1, column=0, padx=10, pady=(0, 5), sticky="w")
-            self.job_progress_label.grid(row=2, column=0, padx=10, pady=(5, 3), sticky="w")
-            self.job_progress_bar.grid(row=3, column=0, padx=10, pady=(0, 5), sticky="w")
+            self.video_progress_label.grid(row=0, column=0, padx=int(10*self.scaling), pady=(int(5*self.scaling), int(3*self.scaling)), sticky="w")
+            self.video_progress_bar.grid(row=1, column=0, padx=int(10*self.scaling), pady=(0, int(5*self.scaling)), sticky="w")
+            self.job_progress_label.grid(row=2, column=0, padx=int(10*self.scaling), pady=(int(5*self.scaling), int(3*self.scaling)), sticky="w")
+            self.job_progress_bar.grid(row=3, column=0, padx=int(10*self.scaling), pady=(0, int(5*self.scaling)), sticky="w")
 
             self.progress_window.tkraise()
 
@@ -377,7 +406,7 @@ class GUI:
 
         self.stop_flag = tk.BooleanVar(value=False)
         cancel_button = ttk.Button(self.progress_window, text=self.translate("Cancel"), command=lambda: self.stop_flag.set(True))
-        cancel_button.grid(row=4, column=0, padx=10, pady=(5, 5), sticky="e")
+        cancel_button.grid(row=4, column=0, padx=int(10*self.scaling), pady=(int(5*self.scaling), int(5*self.scaling)), sticky="e")
 
     def hide_progress(self):
         time.sleep(5)
