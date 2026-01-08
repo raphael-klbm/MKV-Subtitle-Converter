@@ -139,7 +139,7 @@ class VobSubParser:
         # Remove any bad packs
         for i in range(len(list_vob_sub_merge_pack))[::-1]:
             pack = list_vob_sub_merge_pack[i]
-            if pack.sub_picture == None \
+            if pack.sub_picture is None \
                 or pack.sub_picture.image_display_area.width <= 3 \
                 or pack.sub_picture.image_display_area.height <= 2:
 

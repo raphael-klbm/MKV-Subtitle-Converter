@@ -74,7 +74,7 @@ class Idx:
         try:
             return ImageColor.getrgb(hex_str)
         except ValueError:
-            return ImageColor.getcolor("red") # Fallback for invalid hex strings
+            return ImageColor.getrgb("red") # Fallback for invalid hex strings
 
 
     def get_time_code_and_file_position(self, line: str) -> IdxParagraph:
