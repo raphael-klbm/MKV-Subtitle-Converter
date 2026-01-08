@@ -102,9 +102,9 @@ class SubPicture:
                 number_of_commands += 1
                 if command == SubPicture.DisplayControlCommand.ForcedStartDisplay.value: # 0
                     self.forced = True
-                    command_index+=1
+                    command_index += 1
                 elif command == SubPicture.DisplayControlCommand.StartDisplay.value: # 1
-                    command_index+=1
+                    command_index += 1
                 elif command == SubPicture.DisplayControlCommand.StopDisplay.value: # 2
                     self.delay = timedelta(milliseconds=(delay_before_execute << 10) / 90.0)
                     if create_bitmap and self.delay.total_milliseconds() > largest_delay: # in case of more than one images, just use the one with the largest display time
@@ -112,7 +112,7 @@ class SubPicture:
                         # bmp?.Dispose() # Release the image memory
                         bmp = self.generate_bitmap(self.image_display_area, image_top_field_data_address, image_bottom_field_data_address, four_colors, crop)
                         bitmap_generated = True
-                    command_index+=1
+                    command_index += 1
                 elif command == SubPicture.DisplayControlCommand.SetColor.value: # 3
                     if color_look_up_table != None and len(four_colors) == 4:
                         imageColor = [self._data[command_index + 1], self._data[command_index + 2]]
@@ -153,9 +153,9 @@ class SubPicture:
                             pass
                         command_index += parameter_area_size
                     else:
-                        command_index+=1
+                        command_index += 1
                 else:
-                    command_index+=1
+                    command_index += 1
                 if command_index >= len(self._data): # in case of bad files...
                     break
 
@@ -243,7 +243,7 @@ class SubPicture:
                         if c != background_argb:
                             break
                 if SubPicture.is_background_color(c, background_argb):
-                    y+=1
+                    y += 1
             min_y = y
             if (min_y > 3):
                 min_y -= 3
@@ -259,7 +259,7 @@ class SubPicture:
                     if not SubPicture.is_background_color(c, background_argb):
                         break
                 if SubPicture.is_background_color(c, background_argb):
-                    x+=1
+                    x += 1
             min_x = x
             if (min_x > 3):
                 min_x -= 3
@@ -335,13 +335,13 @@ class SubPicture:
 
                     if only_half:
                         only_half = False
-                        index+=1
+                        index += 1
                     x = 0
                     y += addY
                     break
                 if y < img_height and c != color_zero_value:
                     img[y, x] = list(c[:3])
-                x+=1
+                x += 1
         return img
 
     @staticmethod
