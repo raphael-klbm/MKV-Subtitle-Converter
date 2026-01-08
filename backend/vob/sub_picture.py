@@ -29,7 +29,7 @@ class SubPicture:
         """
         For SP packet with DVD sub pictures
         :param: data: bytes content of the sub pack
-        :param: start_display_control_sequence_table_address: Adress of the first control sequence in data
+        :param: start_display_control_sequence_table_address: Address of the first control sequence in data
         :param: pixel_data_address_offset: Bitmap pixel data address offset
         """
         self._data = data
@@ -230,12 +230,12 @@ class SubPicture:
         min_y = 0
         max_y = 0
 
-        img_heigt = img.shape[0]
+        img_height = img.shape[0]
         img_width = img.shape[1]
 
         if crop:
             # Crop top
-            while y < img_heigt and SubPicture.is_background_color(c, background_argb):
+            while y < img_height and SubPicture.is_background_color(c, background_argb):
                 c = img[y, 0]
                 if SubPicture.is_background_color(c, background_argb):
                     for x in range(1, img_width):
@@ -254,7 +254,7 @@ class SubPicture:
             x = 0
             c = background_color
             while x < img_width and SubPicture.is_background_color(c, background_argb):
-                for y in range(min_y, img_heigt):
+                for y in range(min_y, img_height):
                     c = img[y, x]
                     if not SubPicture.is_background_color(c, background_argb):
                         break
@@ -267,7 +267,7 @@ class SubPicture:
                 min_x -= 0
 
             # Crop bottom
-            y = img_heigt - 1
+            y = img_height - 1
             c = background_color
             while y > min_y and SubPicture.is_background_color(c, background_argb):
                 c = img[y, 0]
@@ -279,14 +279,14 @@ class SubPicture:
                 if SubPicture.is_background_color(c, background_argb):
                     y-=1
             max_y = y + 7
-            if max_y >= img_heigt:
-                max_y = img_heigt - 1
+            if max_y >= img_height:
+                max_y = img_height - 1
 
             # Crop right
             x = img_width - 1
             c = background_color
             while x > min_x and SubPicture.is_background_color(c, background_argb):
-                for y in range(min_y, img_heigt):
+                for y in range(min_y, img_height):
                     c = img[y, x]
                     if not SubPicture.is_background_color(c, background_argb):
                         break
@@ -296,7 +296,7 @@ class SubPicture:
             if max_x >= img_width:
                 max_x = img_width - 1
 
-        if img_width > 1 and img_heigt > 1 and max_x - min_x > 0 and max_y - min_y > 0:
+        if img_width > 1 and img_height > 1 and max_x - min_x > 0 and max_y - min_y > 0:
             imgCrop = img[min_y:max_y, min_x:max_x]
             return imgCrop
         return img
@@ -319,9 +319,9 @@ class SubPicture:
         y = startY
         x = 0
         color_zero_value = four_colors[0]
-        img_heigt = img.shape[0]
+        img_height = img.shape[0]
         img_width = img.shape[1]
-        while y < img_heigt and data_address + index + 2 < len(data):
+        while y < img_height and data_address + index + 2 < len(data):
             sup_index, run_length, color, only_half, rest_of_line = SubPicture.decode_rle(data_address + index, data, only_half)
             index += sup_index
             if rest_of_line:
@@ -330,7 +330,7 @@ class SubPicture:
             c: tuple[int, ...] = four_colors[color] # set color via the four colors
             for i in range(run_length):
                 if x >= img_width - 1:
-                    if y < img_heigt and x < img_width and c != four_colors[0]:
+                    if y < img_height and x < img_width and c != four_colors[0]:
                         img[y, x] = list(c)
 
                     if only_half:
@@ -339,7 +339,7 @@ class SubPicture:
                     x = 0
                     y += addY
                     break
-                if y < img_heigt and c != color_zero_value:
+                if y < img_height and c != color_zero_value:
                     img[y, x] = list(c[:3])
                 x+=1
         return img

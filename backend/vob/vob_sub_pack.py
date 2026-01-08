@@ -1,6 +1,6 @@
 
 from .idx import IdxParagraph
-from .packetized_elementary_strem import PacketizedElementaryStream
+from .packetized_elementary_stream import PacketizedElementaryStream
 from .utils import is_mpeg2_pack_header, is_private_stream1, Mpeg2Header
 
 class VobSubPack:
@@ -14,7 +14,7 @@ class VobSubPack:
             if (is_mpeg2_pack_header(buffer)):
 
                 self.mpeg_2_header = Mpeg2Header(buffer)
-                self.packetized_elementary_stream = PacketizedElementaryStream(buffer, self.mpeg_2_header.LENGHT)
+                self.packetized_elementary_stream = PacketizedElementaryStream(buffer, self.mpeg_2_header.LENGTH)
 
             elif (is_private_stream1(buffer, 0)):
 

@@ -78,7 +78,7 @@ class Mpeg2Header:
     #  <summary>
     #  http://www.mpucoder.com/DVD/packhdr.html
     #  </summary>
-    LENGHT = 14
+    LENGTH = 14
 
     def __init__(self, buffer: bytes):
 
@@ -118,9 +118,9 @@ def is_private_stream2(buffer: bytearray, index: int) -> bool:
             and buffer[index + 3] == 0xbf; # 0xbf == 191 - MPEG-2 Private stream 2
 
 def is_subtitle_pack(buffer: bytearray) -> bool:
-    if is_mpeg2_pack_header(buffer) and is_private_stream1(buffer, Mpeg2Header.LENGHT):
-        pesHeader_data_length = buffer[Mpeg2Header.LENGHT + 8]
-        streamId = buffer[Mpeg2Header.LENGHT + 8 + 1 + pesHeader_data_length]
+    if is_mpeg2_pack_header(buffer) and is_private_stream1(buffer, Mpeg2Header.LENGTH):
+        pesHeader_data_length = buffer[Mpeg2Header.LENGTH + 8]
+        streamId = buffer[Mpeg2Header.LENGTH + 8 + 1 + pesHeader_data_length]
 
         return streamId >= 0x20 and streamId <= 0x3f # Subtitle IDs allowed (or x3f to x40?)
     return False

@@ -58,7 +58,7 @@ class VobSubParser:
                                 vsp = VobSubPack(buffer, p)
                                 self.vob_sub_packs.append(vsp)
                                 if is_private_stream1(buffer, 0):
-                                    position += vsp.packetized_elementary_stream.lenght + 6
+                                    position += vsp.packetized_elementary_stream.length + 6
                                 else:
                                     position += 0x800
 
@@ -68,7 +68,7 @@ class VobSubParser:
 
                                 while vsp.packetized_elementary_stream != None \
                                     and hasattr(vsp.packetized_elementary_stream, 'sub_picture_stream_id') \
-                                    and (vsp.packetized_elementary_stream.lenght == PES_MAX_LENGTH \
+                                    and (vsp.packetized_elementary_stream.length == PES_MAX_LENGTH \
                                         or current_sub_picture_stream_id != vsp.packetized_elementary_stream.sub_picture_stream_id) \
                                     and position < len(file):
 
@@ -83,7 +83,7 @@ class VobSubParser:
                                         self.vob_sub_packs.append(vsp)
 
                                         if is_private_stream1(buffer, 0):
-                                            position += vsp.packetized_elementary_stream.lenght + 6
+                                            position += vsp.packetized_elementary_stream.length + 6
                                         else:
                                             position += 0x800
                                     else:

@@ -2,13 +2,13 @@ from .utils import get_endian, get_endian_word, Mpeg2Header
 
 # http://www.mpucoder.com/DVD/pes-hdr.html
 class PacketizedElementaryStream:
-    HEADER_LENGHT: int = 6
+    HEADER_LENGTH: int = 6
 
     def __init__(self, buffer: bytearray, index: int):
         self.buffer = buffer
         self.start_code = get_endian(buffer, index, 3)
         self.stream_id = buffer[index + 3]
-        self.lenght = get_endian_word(buffer, index + 4)
+        self.length = get_endian_word(buffer, index + 4)
 
         self.scrambling_control = (buffer[index + 6] >> 4) & 0b00000011
         self.priority = buffer[index + 6] & 0b00001000
@@ -48,9 +48,9 @@ class PacketizedElementaryStream:
             self.decode_timestamp += buffer[temp_index + 1] << 22
             self.decode_timestamp += (buffer[temp_index + 0] & 0b00001110) << 29
 
-        data_index = index + self.header_data_length + 24 - Mpeg2Header.LENGHT
+        data_index = index + self.header_data_length + 24 - Mpeg2Header.LENGTH
 
-        data_size = self.lenght - (4 + self.header_data_length)
+        data_size = self.length - (4 + self.header_data_length)
 
         if data_size < 0 or (data_size + data_index > len(buffer)): #// to fix bad subs...
             self.data_size = len(buffer) - data_index
