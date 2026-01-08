@@ -240,7 +240,7 @@ class SubPicture:
                 if SubPicture.is_background_color(c, background_argb):
                     for x in range(1, img_width):
                         c = img[y, x]
-                        if c != background_argb:
+                        if not SubPicture.is_background_color(c, background_argb):
                             break
                 if SubPicture.is_background_color(c, background_argb):
                     y += 1
@@ -301,7 +301,7 @@ class SubPicture:
 
     @staticmethod
     def is_background_color(c: tuple[int, ...], background_argb: int) -> bool:
-        return c == background_argb
+        return np.array_equal(np.asarray(c), np.asarray(background_argb))
 
     @staticmethod
     def generate_fast_bitmap(
