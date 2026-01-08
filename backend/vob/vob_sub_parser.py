@@ -27,12 +27,13 @@ class VobSubParser:
     # /// Can be used with e.g. MemoryStream or FileStream
     # /// </summary>
     # /// <param name="ms"></param>
-    def open(self, ms: bytes):
+    def open(self, ms):
         ms.Position = 0
         # var buffer = new byte[0x800] // 2048
         position = 0
+        self.vob_sub_packs = []
+
         while (position < len(ms)):
-            self.vob_sub_packs = []
             ms.seek(position, 0)
             buffer = ms.read(0x0800)
             if (is_subtitle_pack(buffer)):

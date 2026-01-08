@@ -301,7 +301,9 @@ class SubPicture:
 
     @staticmethod
     def is_background_color(c: tuple[int, ...], background_argb: int) -> bool:
-        return np.array_equal(np.asarray(c), np.asarray(background_argb))
+        # Optimized: direct comparison without creating new arrays each call
+        # Works for both numpy arrays (from img[y,x]) and tuples/lists
+        return bool(np.all(c == background_argb))
 
     @staticmethod
     def generate_fast_bitmap(

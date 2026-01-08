@@ -29,7 +29,7 @@ class Idx:
 
 
     def process_file(self, lines: List[str]):
-        language_index = 0
+        self.language_index = 0
         for line in lines:
             line = line.strip('\n')
             if self.time_code_line_pattern.search(line) is not None:
