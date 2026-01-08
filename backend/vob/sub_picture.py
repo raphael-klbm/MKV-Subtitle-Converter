@@ -263,8 +263,6 @@ class SubPicture:
             min_x = x
             if (min_x > 3):
                 min_x -= 3
-            else:
-                min_x -= 0
 
             # Crop bottom
             y = img_height - 1

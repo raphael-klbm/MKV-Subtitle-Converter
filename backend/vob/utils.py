@@ -101,21 +101,21 @@ def is_mpeg2_pack_header(buffer: bytearray) -> bool:
             and buffer[0] == 0 \
             and buffer[1] == 0 \
             and buffer[2] == 1 \
-            and buffer[3] == 0xba; # 0xba == 186 - MPEG-2 Pack Header
+            and buffer[3] == 0xba # 0xba == 186 - MPEG-2 Pack Header
 
 def is_private_stream1(buffer: bytearray, index: int) -> bool:
     return len(buffer) >= index + 4 \
             and buffer[index + 0] == 0 \
             and buffer[index + 1] == 0 \
             and buffer[index + 2] == 1 \
-            and buffer[index + 3] == 0xbd; # 0xbd == 189 - MPEG-2 Private stream 1 (non MPEG audio, subpictures)
+            and buffer[index + 3] == 0xbd # 0xbd == 189 - MPEG-2 Private stream 1 (non MPEG audio, subpictures)
 
 def is_private_stream2(buffer: bytearray, index: int) -> bool:
     return len(buffer) >= index + 4 \
             and buffer[index + 0] == 0 \
             and buffer[index + 1] == 0 \
             and buffer[index + 2] == 1 \
-            and buffer[index + 3] == 0xbf; # 0xbf == 191 - MPEG-2 Private stream 2
+            and buffer[index + 3] == 0xbf # 0xbf == 191 - MPEG-2 Private stream 2
 
 def is_subtitle_pack(buffer: bytearray) -> bool:
     if is_mpeg2_pack_header(buffer) and is_private_stream1(buffer, Mpeg2Header.LENGTH):
