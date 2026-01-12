@@ -210,7 +210,7 @@ class SubExtractor:
                 continue
             
             current_times.append(0)
-            # TODO: Fix IndexError
+            # TODO: Fix IndexError (race condition when subtitles have already been extracted)
             thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, index, 'sub', current_times, finished))
             finished.append(False)
             thread.start()
