@@ -155,8 +155,23 @@ class SubtitleConverter:
 
     def process_pack(self, pack: VobSubMergedPack, palette: list[str]) -> tuple[Path, Image.Image]:
         img = self.extract_subtitle_image_from_pack(pack, palette)
-        img = Image.fromarray((img * 255).astype('uint8'), 'RGB')
-        # image.imsave(image_path, (img * 255).astype('uint8'))
+        img = Image.fromarray((img * 255).astype('uint8'), 'RGBA')
+        img = img.convert('RGB')
+
+        scale = 1
+        padding = 25
+        
+        img = img.resize((img.width*scale, img.height*scale), Image.NEAREST)
+
+        # add padding to image so text is not at the edge to improve OCR
+        width, height = img.size
+        new_width = width + 2*padding
+        new_height = height + 2*padding
+
+        new_img = Image.new(img.mode, (new_width, new_height), (0, 0, 0))
+        new_img.paste(img, (padding, padding))
+        img = new_img
+
         subfile_text = self.create_subfile_text(pack)
         return subfile_text, img
 
@@ -179,7 +194,7 @@ class SubtitleConverter:
             x, y, _ = np.where(img < 1)
         else:
             x, y, _ = np.where(img > 0)
-        img = img[max(np.min(x) - 25, 0):np.max(x) + 25, max(np.min(y) - 25, 0): np.max(y) + 25]
+        img = img[max(np.min(x), 0):np.max(x), max(np.min(y), 0): np.max(y)]
         return img
 
     
