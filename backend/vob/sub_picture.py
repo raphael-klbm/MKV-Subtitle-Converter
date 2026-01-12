@@ -180,7 +180,16 @@ class SubPicture:
     ) -> None:
 
         if clut_index >= 0 and clut_index < len(color_look_up_table) and four_color_index >= 0:
-            four_colors[four_color_index] = color_look_up_table[clut_index]
+            color = color_look_up_table[clut_index]
+            # Normalize RGB from 0-255 to 0-1 range
+            r, g, b = color[:3]
+
+            if r > 1 or g > 1 or b > 1:
+                r, g, b = r / 255.0, g / 255.0, b / 255.0
+            # Preserve alpha if present, default to 1.0 (opaque)
+            a = color[3] / 255.0 if len(color) > 3 and color[3] > 1 else (color[3] if len(color) > 3 else 1.0)
+
+            four_colors[four_color_index] = (r, g, b, a)
         return four_colors
 
     @staticmethod
@@ -192,7 +201,11 @@ class SubPicture:
         # alpha: 0x0 = transparent, 0xF = opaque (in C# 0 is fully transparent, and 255 is fully opaque so we have to multiply by 17)
         if (four_color_index >= 0):
             r, g, b = four_colors[four_color_index][:3]
-            four_colors[four_color_index] = (int(r * 255), int(g * 255), int(b * 255))
+            # Convert RGB from 0-255 to 0-1 range if needed
+            if r > 1 or g > 1 or b > 1:
+                r, g, b = r / 255.0, g / 255.0, b / 255.0
+
+            four_colors[four_color_index] = (r, g, b, alpha)
         return four_colors
 
     def generate_bitmap(
@@ -204,12 +217,9 @@ class SubPicture:
         crop: bool
     ) -> np.ndarray:
         if image_display_area.width <= 0 and image_display_area.height <= 0:
-            return np.zeros([1, 1])
+            return np.zeros([1, 1, 4])
 
-        img = np.zeros([image_display_area.height, image_display_area.width, 3])
-        # initialize the bg color
-        img = img + list(four_colors[0][:3])
-
+        img = np.zeros([image_display_area.height, image_display_area.width, 4])
         img = self.generate_fast_bitmap(self._data, img, 0, image_top_field_data_address, four_colors, 2)
         img = self.generate_fast_bitmap(self._data, img, 1, image_bottom_field_data_address, four_colors, 2)
         cropped = self.crop_bitmap_and_unlock(img, four_colors[0], crop)
@@ -229,7 +239,6 @@ class SubPicture:
         max_x = 0
         min_y = 0
         max_y = 0
-
         img_height = img.shape[0]
         img_width = img.shape[1]
 
@@ -297,12 +306,11 @@ class SubPicture:
         if img_width > 1 and img_height > 1 and max_x - min_x > 0 and max_y - min_y > 0:
             imgCrop = img[min_y:max_y, min_x:max_x]
             return imgCrop
+        
         return img
 
     @staticmethod
     def is_background_color(c: tuple[int, ...], background_argb: int) -> bool:
-        # Optimized: direct comparison without creating new arrays each call
-        # Works for both numpy arrays (from img[y,x]) and tuples/lists
         return bool(np.all(c == background_argb))
 
     @staticmethod
@@ -321,6 +329,7 @@ class SubPicture:
         color_zero_value = four_colors[0]
         img_height = img.shape[0]
         img_width = img.shape[1]
+
         while y < img_height and data_address + index + 2 < len(data):
             sup_index, run_length, color, only_half, rest_of_line = SubPicture.decode_rle(data_address + index, data, only_half)
             index += sup_index
@@ -328,7 +337,7 @@ class SubPicture:
                 run_length = img_width - x
 
             c: tuple[int, ...] = four_colors[color] # set color via the four colors
-            for i in range(run_length):
+            for _ in range(run_length):
                 if x >= img_width - 1:
                     if y < img_height and x < img_width and c != four_colors[0]:
                         img[y, x] = list(c)
@@ -340,8 +349,9 @@ class SubPicture:
                     y += add_y
                     break
                 if y < img_height and c != color_zero_value:
-                    img[y, x] = list(c[:3])
+                    img[y, x] = list(c)
                 x += 1
+                
         return img
 
     @staticmethod
