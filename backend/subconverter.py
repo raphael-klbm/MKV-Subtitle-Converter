@@ -233,7 +233,7 @@ class SubtitleConverter:
             sub_start, sub_end = subfile_text
             
             if self.keep_imgs:
-                img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
+                img.save(os.path.join(track_img_dir, f"{sub_index}.png"))
             
             sub_text = pytesseract.image_to_string(img, lang)
             start_time = SubRipTime(seconds=sub_start)
