@@ -1,3 +1,5 @@
+# Source: https://github.com/vincrichard/VobSub-ML-OCR
+
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import wraps

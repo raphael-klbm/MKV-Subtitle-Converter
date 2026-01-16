@@ -1,3 +1,4 @@
+# Source: https://github.com/vincrichard/VobSub-ML-OCR
 
 from .idx import IdxParagraph
 from .packetized_elementary_stream import PacketizedElementaryStream

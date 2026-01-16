@@ -1,3 +1,5 @@
+# Source: https://github.com/vincrichard/VobSub-ML-OCR
+
 from .utils import get_endian, get_endian_word, Mpeg2Header
 
 # http://www.mpucoder.com/DVD/pes-hdr.html

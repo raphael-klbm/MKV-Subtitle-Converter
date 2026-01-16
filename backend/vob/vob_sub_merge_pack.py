@@ -1,3 +1,4 @@
+# Source: https://github.com/vincrichard/VobSub-ML-OCR
 
 from typing import Tuple
 import numpy as np

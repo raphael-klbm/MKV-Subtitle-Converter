@@ -1,3 +1,4 @@
+# Source: https://github.com/vincrichard/VobSub-ML-OCR
 
 from enum import Enum
 from typing import List
@@ -7,7 +8,7 @@ from .utils import get_endian_word, Rectangle
 from .utils import custom_timedelta as timedelta
 
 class SubPicture:
-# Subtitle Picture - see http:#www.mpucoder.com/DVD/spu.html for more info
+# Subtitle Picture - see http://www.mpucoder.com/DVD/spu.html for more info
 # http://sam.zoy.org/writings/dvd/subtitles/
 
     class DisplayControlCommand(Enum):
