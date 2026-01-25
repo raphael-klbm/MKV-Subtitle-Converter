@@ -95,7 +95,7 @@ class SubExtractor:
 
 
     # helper function for threading
-    def __extract(self, file_id: int, track_id: int, file_ending: str, times: list[int], finished: list[bool]):
+    def __extract(self, file_id: int, track_id: int, file_ending: str, times: dict[int, int], finished: dict[int, bool]):
         file_path = Path(self.sub_dir, f"{file_id}.{file_ending}")
         
         if file_ending in ['sup', 'srt']:
@@ -152,8 +152,8 @@ class SubExtractor:
 
         subtitle_streams = [stream for stream in self.probe['streams'] if stream['codec_name'] == 'hdmv_pgs_subtitle']
         total_time = 0
-        current_times = []
-        finished = []
+        current_times = {}
+        finished = {}
         start_time = datetime(1900, 1, 1)
 
         if not os.path.exists(self.sub_dir):
@@ -171,9 +171,9 @@ class SubExtractor:
             if os.path.exists(str(self.sub_dir / f'{self.subtitle_counter - 1}.sup')):
                 continue
             
-            current_times.append(0)
+            current_times[i] = 0
             thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, i, 'sup', current_times, finished))
-            finished.append(False)
+            finished[i] = False
             thread.start()
             thread_pool.append(thread)
 
@@ -189,8 +189,8 @@ class SubExtractor:
 
         subtitle_streams = [stream for stream in self.probe['streams'] if stream['codec_name'] == 'dvd_subtitle']
         total_time = 0
-        current_times = []
-        finished = []
+        current_times = {}
+        finished = {}
         start_time = datetime(1900, 1, 1)
 
         if not os.path.exists(self.sub_dir):
@@ -209,10 +209,9 @@ class SubExtractor:
             if os.path.exists(str(self.sub_dir / f'{index}.sub')):
                 continue
             
-            current_times.append(0)
-            # TODO: Fix IndexError (race condition when subtitles have already been extracted)
+            current_times[i] = 0
             thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, index, 'sub', current_times, finished))
-            finished.append(False)
+            finished[i] = False
             thread.start()
             thread_pool.append(thread)
 
@@ -228,8 +227,8 @@ class SubExtractor:
 
         subtitle_streams = [stream for stream in self.probe['streams'] if stream['codec_name'] == 'subrip']
         total_time = 0
-        current_times = []
-        finished = []
+        current_times = {}
+        finished = {}
         start_time = datetime(1900, 1, 1)
 
         if not os.path.exists(self.sub_dir):
@@ -247,9 +246,9 @@ class SubExtractor:
             if os.path.exists(str(self.sub_dir / f'{self.subtitle_counter - 1}.srt')):
                 continue
             
-            current_times.append(0)
+            current_times[i] = 0
             thread = Thread(name=f"Extract subtitle #{i}", target=self.__extract, args=(i, i, 'srt', current_times, finished))
-            finished.append(False)
+            finished[i] = False
             thread.start()
             thread_pool.append(thread)
 
