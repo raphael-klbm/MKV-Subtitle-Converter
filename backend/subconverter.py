@@ -124,6 +124,7 @@ class SubtitleConverter:
                 pds = ds.pds[0] # get Palette Definition Segment
                 ods = ds.ods[0] # get Object Definition Segment
                 img = im.make_image(ods, pds)
+                img = self.process_image(img)
 
                 # TODO add exit code check for ImageMaker
                 
@@ -157,46 +158,11 @@ class SubtitleConverter:
     def process_pack(self, pack: VobSubMergedPack, palette: list[str]) -> tuple[Path, Image.Image]:
         img = self.extract_subtitle_image_from_pack(pack, palette)
         img = Image.fromarray((img * 255).astype('uint8'), 'RGBA')
-        # img = img.convert('RGB')
-        self.brightness_diff = self.text_brightness_diff
-
-        new_image = Image.new("RGBA", img.size, "BLACK") # Create a white rgba background
-        new_image.paste(img, (0, 0), img)
-
-        image = np.array(new_image)
-
-        # Convert image to HSV color space
-        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        v_channel = hsv_image[:,:,2]
-        max_v_value = np.max(v_channel)  # maximum brightness value, should be the text color
-
-        # Create a mask to only select the pixels with the highest V value (+- 1% tolerance)
-        mask = cv2.inRange(v_channel, np.array(max_v_value - self.brightness_diff), np.array(max_v_value + self.brightness_diff))
-
-        # create empty black image
-        result = np.full((image.shape[0], image.shape[1], 3), 255, dtype=np.uint8)
-
-        # set pixels of mask to white
-        result[mask == 255] = [0, 0, 0]
-
-        img = Image.fromarray(result)
-
-        scale = 1
-        padding = 25
-        
-        img = img.resize((img.width*scale, img.height*scale), Image.NEAREST)
-
-        # add padding to image so text is not at the edge to improve OCR
-        width, height = img.size
-        new_width = width + 2*padding
-        new_height = height + 2*padding
-
-        new_img = Image.new(img.mode, (new_width, new_height), (255, 255, 255))
-        new_img.paste(img, (padding, padding))
-        img = new_img
+        img = self.process_image(img)
 
         subfile_text = self.create_subfile_text(pack)
         return subfile_text, img
+
 
     def create_subfile_text(self, pack: VobSubMergedPack):
         # result = f"{pack_id + 1}\n" + \
@@ -278,3 +244,43 @@ class SubtitleConverter:
         #     file.write(content)
 
         srtchecker.check_srt(srt_file, True) # check SRT file for common OCR mistakes
+
+
+    def process_image(self, img: Image.Image) -> Image.Image:
+        self.brightness_diff = self.text_brightness_diff
+
+        new_image = Image.new("RGBA", img.size, "BLACK") # Create a white rgba background
+        new_image.paste(img, (0, 0), img)
+
+        image = np.array(new_image)
+
+        # Convert image to HSV color space
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        v_channel = hsv_image[:,:,2]
+        max_v_value = np.max(v_channel)  # maximum brightness value, should be the text color
+
+        # Create a mask to only select the pixels with the highest V value (+- 1% tolerance)
+        mask = cv2.inRange(v_channel, np.array(max_v_value - self.brightness_diff), np.array(max_v_value + self.brightness_diff))
+
+        # create empty black image
+        result = np.full((image.shape[0], image.shape[1], 3), 255, dtype=np.uint8)
+
+        # set pixels of mask to white
+        result[mask == 255] = [0, 0, 0]
+
+        img = Image.fromarray(result)
+
+        scale = 1
+        padding = 25
+        
+        img = img.resize((img.width*scale, img.height*scale), Image.NEAREST)
+
+        # add padding to image so text is not at the edge to improve OCR
+        width, height = img.size
+        new_width = width + 2*padding
+        new_height = height + 2*padding
+
+        new_img = Image.new(img.mode, (new_width, new_height), (255, 255, 255))
+        new_img.paste(img, (padding, padding))
+        img = new_img
+        return img
