@@ -1,6 +1,15 @@
 FROM debian:12
 
-ENV DISPLAY=:0
+RUN apt-get update && apt-get install -y \
+    wget \
+    ca-certificates \
+    gnupg
+
+RUN mkdir -p /etc/apt/keyrings && \
+    wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
+
+RUN echo "deb [signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/debian/ bookworm main" \
+    > /etc/apt/sources.list.d/mkvtoolnix.download.list
 
 RUN apt update && \
     apt install -y \
@@ -9,8 +18,11 @@ RUN apt update && \
     python3-pip \
     python3-tk \
     tesseract-ocr-all \
-    ffmpeg && \
-    apt-get clean
+    ffmpeg \
+    mkvtoolnix \
+    libx11-6 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
