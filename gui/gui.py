@@ -45,9 +45,10 @@ class GUI:
         else: # linux
             self.scaling = self.window.winfo_fpixels('1i') / 72.0
 
-        tk_internal_scaling = (self.scaling * 96.0) / 72.0
+        if not sys.platform.startswith("linux"):
+            self.scaling = (self.scaling * 96.0) / 72.0
 
-        self.window.tk.call('tk', 'scaling', tk_internal_scaling)
+        self.window.tk.call('tk', 'scaling', self.scaling)
 
         width = int(500 * self.scaling)
         height = int(720 * self.scaling)
