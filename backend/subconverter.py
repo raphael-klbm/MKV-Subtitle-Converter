@@ -124,13 +124,14 @@ class SubtitleConverter:
                 pds = ds.pds[0] # get Palette Definition Segment
                 ods = ds.ods[0] # get Object Definition Segment
                 img = im.make_image(ods, pds)
-                img = self.process_image(img)
 
                 # TODO add exit code check for ImageMaker
                 
                 if self.keep_imgs:
-                    img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
+                    img.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
                 
+                img = self.process_image(img)
+
                 sub_text = pytesseract.image_to_string(img, lang)
                 sub_start = ods.presentation_timestamp
             else:
