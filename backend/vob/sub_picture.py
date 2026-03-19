@@ -138,7 +138,7 @@ class SubPicture:
                         ending_x = (self._data[command_index + 2] & 0b00001111) << 8 | self._data[command_index + 3]
                         starting_y = (self._data[command_index + 4] << 8 | self._data[command_index + 5]) >> 4
                         ending_y = (self._data[command_index + 5] & 0b00001111) << 8 | self._data[command_index + 6]
-                        self.image_display_area = Rectangle(starting_x, starting_y, ending_x - starting_x +1, ending_y - starting_y+1)
+                        self.image_display_area = Rectangle(starting_x, starting_y, ending_x - starting_x +1, ending_y - starting_y+4)
                     command_index += 7
                 elif command == SubPicture.DisplayControlCommand.SetPixelDataAddress.value: # 6
                     image_top_field_data_address = get_endian_word(self._data, command_index + 1) + self._pixel_data_address_offset

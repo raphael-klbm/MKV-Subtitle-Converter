@@ -156,35 +156,27 @@ class SubtitleConverter:
         srtchecker.check_srt(srt_file, True) # check SRT file for common OCR mistakes
 
 
-    def process_pack(self, pack: VobSubMergedPack, palette: list[str]) -> tuple[Path, Image.Image]:
-        img = self.extract_subtitle_image_from_pack(pack, palette)
-        img = Image.fromarray((img * 255).astype('uint8'), 'RGBA')
-        img = self.process_image(img)
-
-        subfile_text = self.create_subfile_text(pack)
-        return subfile_text, img
-
-
-    def create_subfile_text(self, pack: VobSubMergedPack):
-        # result = f"{pack_id + 1}\n" + \
-        #     f"{pack.start_time.get_str_format()} --> {pack.end_time.get_str_format()}\n" + \
-        #     f"{image_path}\n\n"
-        # print(result)
+    def create_subfile_timings(self, pack: VobSubMergedPack):
 
         result = (pack.start_time / timedelta(seconds=1), pack.end_time / timedelta(seconds=1))
         return result
 
 
+    def crop_image(self, image: np.ndarray) -> np.ndarray:
+        # Resize image to make sure we don't keep large empty space
+        # if more pixels are 1 instead of 0, use img < 1 instead of img > 0 to find the area with content
+        if np.mean(image) > 0.5:
+            x, y, _ = np.where(image < 1)
+        else:
+            x, y, _ = np.where(image > 0)
+        image = image[max(np.min(x), 0):np.max(x), max(np.min(y), 0): np.max(y)]
+
+        return image
+    
+
     def extract_subtitle_image_from_pack(self, pack: VobSubMergedPack, palette: list[str]) -> np.ndarray :
         pack.palette = palette
         img = pack.get_bitmap()
-        # Resize image to make sure we don't keep large empty space
-        # if more pixels are 1 instead of 0, use img < 1 instead of img > 0 to find the area with content
-        if np.mean(img) > 0.5:
-            x, y, _ = np.where(img < 1)
-        else:
-            x, y, _ = np.where(img > 0)
-        img = img[max(np.min(x), 0):np.max(x), max(np.min(y), 0): np.max(y)]
         return img
 
     
@@ -207,8 +199,8 @@ class SubtitleConverter:
             track_img_dir.mkdir(parents=True, exist_ok=True)
 
         vob_sub_parser.open_sub_idx(str(sub_file), str(idx_file))
-        _vob_sub_merged_pack_list = vob_sub_parser.merge_vob_sub_packs()
-        _palette = vob_sub_parser.idx_palette
+        vob_sub_merged_pack_list = vob_sub_parser.merge_vob_sub_packs()
+        palette = vob_sub_parser.idx_palette
         
         if self.continue_flag is False:
             return
@@ -218,16 +210,22 @@ class SubtitleConverter:
         sub_start = 0
         sub_index = 0
 
-        for pack in tqdm(_vob_sub_merged_pack_list):
-            subfile_text, img = self.process_pack(pack, _palette)
-            sub_start, sub_end = subfile_text
+        for pack in tqdm(vob_sub_merged_pack_list):
+            img = self.extract_subtitle_image_from_pack(pack, palette)
             
             if self.keep_imgs:
-                img.save(os.path.join(track_img_dir, f"{sub_index}.jpg"))
-            
+                image = Image.fromarray((img * 255).astype('uint8'), 'RGBA')
+                image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
+
+            img = self.crop_image(img)
+            img = self.process_image(img)
+
             sub_text = pytesseract.image_to_string(img, lang)
+            
+            sub_start, sub_end = self.create_subfile_timings(pack)
             start_time = SubRipTime(seconds=sub_start)
             end_time = SubRipTime(seconds=sub_end)
+            
             srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
             sub_index += 1
 
@@ -247,13 +245,11 @@ class SubtitleConverter:
         srtchecker.check_srt(srt_file, True) # check SRT file for common OCR mistakes
 
 
-    def process_image(self, img: Image.Image) -> Image.Image:
+    def process_image(self, img: np.ndarray) -> Image.Image:
         self.brightness_diff = self.text_brightness_diff
 
-        new_image = Image.new("RGBA", img.size, "BLACK") # Create a white rgba background
-        new_image.paste(img, (0, 0), img)
-
-        image = np.array(new_image)
+        image = np.zeros((img.shape[0], img.shape[1], 4), dtype=np.uint8) # Create a black rgba background
+        image[:, :, :] = np.array(img*255, dtype=np.uint8) # Set the text color to white and keep the alpha channel as it is (for forced subtitles)
 
         # Convert image to HSV color space
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -283,5 +279,4 @@ class SubtitleConverter:
 
         new_img = Image.new(img.mode, (new_width, new_height), (255, 255, 255))
         new_img.paste(img, (padding, padding))
-        img = new_img
-        return img
+        return new_img
