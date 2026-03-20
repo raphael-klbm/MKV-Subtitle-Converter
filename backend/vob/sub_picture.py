@@ -43,7 +43,7 @@ class SubPicture:
         else:
             self._start_display_control_sequence_table_address = get_endian_word(self._data, 2)
             self.sub_picture_data_size = len(self._data)
-        self.parse_display_control_commands(False, None, None, False, False)
+        self.parse_display_control_commands(False, None, None, False)
 
     def get_bitmap(
         self,
@@ -52,8 +52,7 @@ class SubPicture:
         pattern: tuple[int, ...],
         emphasis1: tuple[int, ...],
         emphasis2: tuple[int, ...],
-        use_custom_colors: bool,
-        crop: bool = True
+        use_custom_colors: bool
     ) -> np.ndarray:
         """
         Generates the current subtitle image
@@ -63,20 +62,18 @@ class SubPicture:
         :param: emphasis1: Color
         :param: emphasis2: Color
         :param: use_custom_colors: Use custom colors instead of lookup table
-        :param: crop: Crop result image
 
         :return: Subtitle image
         """
         four_colors = [background, pattern, emphasis1, emphasis2]
-        return self.parse_display_control_commands(True, color_lookup_table, four_colors, use_custom_colors, crop)
+        return self.parse_display_control_commands(True, color_lookup_table, four_colors, use_custom_colors)
 
     def parse_display_control_commands(
         self,
         create_bitmap: bool,
         color_look_up_table: List[tuple[int, ...]],
         four_colors: List[tuple[int, ...]],
-        use_custom_colors: bool,
-        crop: bool
+        use_custom_colors: bool
     ) -> np.ndarray:
         self.image_display_area = Rectangle()
         bmp = None
@@ -111,7 +108,7 @@ class SubPicture:
                     if create_bitmap and self.delay.total_milliseconds() > largest_delay: # in case of more than one images, just use the one with the largest display time
                         largest_delay = self.delay.total_milliseconds()
                         # bmp?.Dispose() # Release the image memory
-                        bmp = self.generate_bitmap(self.image_display_area, image_top_field_data_address, image_bottom_field_data_address, four_colors, crop)
+                        bmp = self.generate_bitmap(self.image_display_area, image_top_field_data_address, image_bottom_field_data_address, four_colors)
                         bitmap_generated = True
                     command_index += 1
                 elif command == SubPicture.DisplayControlCommand.SetColor.value: # 3
@@ -168,7 +165,7 @@ class SubPicture:
             else:
                 display_control_sequence_table_address = get_endian_word(self._data, display_control_sequence_table_address + 2)
         if create_bitmap and not bitmap_generated: # StopDisplay not needed (delay will be zero - should be just before start of next subtitle)
-            bmp = self.generate_bitmap(self.image_display_area, image_top_field_data_address, image_bottom_field_data_address, four_colors, crop)
+            bmp = self.generate_bitmap(self.image_display_area, image_top_field_data_address, image_bottom_field_data_address, four_colors)
 
         return bmp
 
@@ -214,8 +211,7 @@ class SubPicture:
         image_display_area: Rectangle,
         image_top_field_data_address: int,
         image_bottom_field_data_address: int,
-        four_colors: List[tuple[int, ...]],
-        crop: bool
+        four_colors: List[tuple[int, ...]]
     ) -> np.ndarray:
         if image_display_area.width <= 0 and image_display_area.height <= 0:
             return np.zeros([1, 1, 4])
@@ -223,91 +219,7 @@ class SubPicture:
         img = np.zeros([image_display_area.height, image_display_area.width, 4])
         img = self.generate_fast_bitmap(self._data, img, 0, image_top_field_data_address, four_colors, 2)
         img = self.generate_fast_bitmap(self._data, img, 1, image_bottom_field_data_address, four_colors, 2)
-        cropped = self.crop_bitmap_and_unlock(img, four_colors[0], crop)
 
-        return cropped
-
-    @staticmethod
-    def crop_bitmap_and_unlock(
-        img: np.ndarray,
-        background_color: tuple[int, ...],
-        crop: bool
-    ) -> np.ndarray:
-        y = 0
-        c: tuple[int, ...] = background_color
-        background_argb = list(background_color)
-        min_x = 0
-        max_x = 0
-        min_y = 0
-        max_y = 0
-        img_height = img.shape[0]
-        img_width = img.shape[1]
-
-        if crop:
-            # Crop top
-            while y < img_height and SubPicture.is_background_color(c, background_argb):
-                c = img[y, 0]
-                if SubPicture.is_background_color(c, background_argb):
-                    for x in range(1, img_width):
-                        c = img[y, x]
-                        if not SubPicture.is_background_color(c, background_argb):
-                            break
-                if SubPicture.is_background_color(c, background_argb):
-                    y += 1
-            min_y = y
-            if (min_y > 3):
-                min_y -= 3
-            else:
-                min_y = 0
-
-            # Crop left
-            x = 0
-            c = background_color
-            while x < img_width and SubPicture.is_background_color(c, background_argb):
-                for y in range(min_y, img_height):
-                    c = img[y, x]
-                    if not SubPicture.is_background_color(c, background_argb):
-                        break
-                if SubPicture.is_background_color(c, background_argb):
-                    x += 1
-            min_x = x
-            if (min_x > 3):
-                min_x -= 3
-
-            # Crop bottom
-            y = img_height - 1
-            c = background_color
-            while y > min_y and SubPicture.is_background_color(c, background_argb):
-                c = img[y, 0]
-                if SubPicture.is_background_color(c, background_argb):
-                    for x in range(1, img_width):
-                        c = img[y, x]
-                        if not SubPicture.is_background_color(c, background_argb):
-                            break
-                if SubPicture.is_background_color(c, background_argb):
-                    y-=1
-            max_y = y + 7
-            if max_y >= img_height:
-                max_y = img_height - 1
-
-            # Crop right
-            x = img_width - 1
-            c = background_color
-            while x > min_x and SubPicture.is_background_color(c, background_argb):
-                for y in range(min_y, img_height):
-                    c = img[y, x]
-                    if not SubPicture.is_background_color(c, background_argb):
-                        break
-                if SubPicture.is_background_color(c, background_argb):
-                    x-=1
-            max_x = x + 7
-            if max_x >= img_width:
-                max_x = img_width - 1
-
-        if img_width > 1 and img_height > 1 and max_x - min_x > 0 and max_y - min_y > 0:
-            imgCrop = img[min_y:max_y, min_x:max_x]
-            return imgCrop
-        
         return img
 
     @staticmethod

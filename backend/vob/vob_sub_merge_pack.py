@@ -21,8 +21,8 @@ class VobSubMergedPack: #IBinaryParagraphWithPosition
         return self.sub_picture.forced
 
     def get_bitmap(self) -> np.ndarray:
-        return self.sub_picture.get_bitmap(self.palette, ImageColor.getrgb("red"), ImageColor.getrgb("black"), ImageColor.getrgb("white"), ImageColor.getrgb("black"), False, False)
-        # return self.sub_picture.get_bitmap(self.palette, Color.Transparent, Color("black"), Color("white"), Color("black"), False, True)
+        return self.sub_picture.get_bitmap(self.palette, ImageColor.getrgb("red"), ImageColor.getrgb("black"), ImageColor.getrgb("white"), ImageColor.getrgb("black"), False)
+        # return self.sub_picture.get_bitmap(self.palette, Color.Transparent, Color("black"), Color("white"), Color("black"), False)
 
     def get_position(self) -> Tuple:
         return self.sub_picture.image_display_area.x, self.sub_picture.image_display_area.y
