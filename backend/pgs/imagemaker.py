@@ -81,11 +81,11 @@ class ImageMaker:
 
         return px, rgb, a
 
-    def make_image(self, ods, pds, swap=False):
+    def make_image(self, ods, pds, swap=False) -> np.ndarray:
         px, rgb, a = self.px_rgb_a(ods, pds, swap)
         
         rgb_img = rgb[px]
         rgba_img = np.dstack((rgb_img, a))  # combine RGB and A channels
-        img = Image.fromarray(rgba_img, mode='RGBA')
+        # img = Image.fromarray(rgba_img, mode='RGBA')
 
-        return img
+        return rgba_img

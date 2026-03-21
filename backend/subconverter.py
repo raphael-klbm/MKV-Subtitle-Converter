@@ -128,9 +128,10 @@ class SubtitleConverter:
                 # TODO add exit code check for ImageMaker
                 
                 if self.keep_imgs:
-                    img.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
+                    image = Image.fromarray(img, 'RGBA')
+                    image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
                 
-                img = self.process_image(img)
+                img = self.process_image(img/255)
 
                 sub_text = pytesseract.image_to_string(img, lang)
                 sub_start = ods.presentation_timestamp
