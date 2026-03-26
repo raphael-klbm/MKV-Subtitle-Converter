@@ -1,6 +1,6 @@
 # MKV-Subtitle-Converter
 
-This program extracts all PGS subtitles (i.e .sup files) in a MKV file, converts them to text based subtitles (e.g. .srt, .ass, ...) using OCR and replace the old PGS subtitles with the newly created subtitle files. It also allows you to edit the subtitles before replacing them. \
+This program extracts all PGS subtitles (i.e .sup files) and VOB subtitles (i.e. .sub with .idx files) in a MKV file, converts them to text based subtitles (e.g. .srt, .ass, ...) using OCR and replace the old PGS subtitles with the newly created subtitle files. It also allows you to edit the subtitles before replacing them. \
 Using text based subtitles instead of PGS subtitles is useful because they can be edited and are supported by more players.
 
 ## Requirements
