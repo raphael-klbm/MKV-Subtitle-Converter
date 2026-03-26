@@ -21,7 +21,9 @@ class Idx:
         self.idx_paragraphs: List[IdxParagraph] = []
         self.palette: List[str] = [] #Colour
         self.languages: List[str] = []
+        self.video_size: tuple[int, int] | None = None
         self.time_code_line_pattern = re.compile("^timestamp: \d+:\d+:\d+:\d+, filepos: [\dabcdefABCDEF]+$")
+        self.size_line_pattern = re.compile(r"^size:\s*(\d+)x(\d+)\s*$", re.IGNORECASE)
 
         with open(file_name) as file:
             lines = file.readlines()
@@ -64,6 +66,13 @@ class Idx:
                     # # Use U+200E (LEFT-TO-RIGHT MARK) to support right-to-left scripts
                     # Languages.Add(string.Format("{0} \x200E(0x{1:x})", languageName, languageIndex + 32));
                     # languageIndex++;
+
+            elif line.lower().startswith("size:"):
+                size_match = self.size_line_pattern.match(line)
+                if size_match is not None:
+                    width = int(size_match.group(1))
+                    height = int(size_match.group(2))
+                    self.video_size = (width, height)
 
 
     def hex_to_color(self, hex_str: str):

@@ -19,6 +19,7 @@ class VobSubParser:
         self.is_pal = is_pal
         self.vob_sub_packs: list[VobSubPack] = []
         self.settings = SettingsArgs()
+        self.video_size: tuple[int, int] = (720, 576) if is_pal else (720, 480)
 
     def open_file(self, filename: str) -> None:
         with open(filename, mode='rb') as file:
@@ -48,6 +49,8 @@ class VobSubParser:
             idx = Idx(idx_filename)
             self.idx_palette = idx.palette
             self.idx_languages = idx.languages
+            if idx.video_size is not None:
+                self.video_size = idx.video_size
             if len(idx.idx_paragraphs) > 0:
                 with open(vob_sub_filename, mode='rb') as fs:
                     file = fs.read()
@@ -127,7 +130,7 @@ class VobSubParser:
                     if p.packetized_elementary_stream.presentation_timestamp_decode_timestamp_flags > 0:
                         if last_idx_paragraph is None or p.idx_line.file_position != last_idx_paragraph.file_position:
                             if len(ms) > 0:
-                                list_vob_sub_merge_pack.append(VobSubMergedPack(ms, pts, stream_id, last_idx_paragraph))
+                                list_vob_sub_merge_pack.append(VobSubMergedPack(ms, pts, stream_id, last_idx_paragraph, self.video_size))
 
                             ms = bytearray()
                             pts = custom_timedelta(milliseconds = float(p.packetized_elementary_stream.presentation_timestamp / ticks_per_millisecond)) # 90000F * 1000)); (PAL)
@@ -135,7 +138,7 @@ class VobSubParser:
                     last_idx_paragraph = p.idx_line
                     ms = p.packetized_elementary_stream.write_to_stream(ms)
             if len(ms) > 0:
-                list_vob_sub_merge_pack.append(VobSubMergedPack(ms, pts, stream_id, last_idx_paragraph))
+                list_vob_sub_merge_pack.append(VobSubMergedPack(ms, pts, stream_id, last_idx_paragraph, self.video_size))
                 ms = bytearray()
 
         # Remove any bad packs
