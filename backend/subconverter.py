@@ -252,18 +252,29 @@ class SubtitleConverter:
         image = np.zeros((img.shape[0], img.shape[1], 4), dtype=np.uint8) # Create a black rgba background
         image[:, :, :] = np.array(img*255, dtype=np.uint8) # Set the text color to white and keep the alpha channel as it is (for forced subtitles)
 
-        # Convert image to HSV color space
-        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        # Convert image to HSV color space (ignoring alpha channel)
+        hsv_image = cv2.cvtColor(image[:,:,:3], cv2.COLOR_BGR2HSV)
         v_channel = hsv_image[:,:,2]
-        max_v_value = np.max(v_channel)  # maximum brightness value, should be the text color
+        
+        # Only consider pixels where alpha > 0 (not transparent)
+        alpha_channel = image[:,:,3]
+        valid_pixels = v_channel[alpha_channel > 0]
+        
+        if len(valid_pixels) > 0:
+            max_v_value = np.max(valid_pixels)
+        else:
+            max_v_value = np.max(v_channel)
 
-        # Create a mask to only select the pixels with the highest V value (+- 1% tolerance)
+        # Create a mask to only select the pixels with the highest V value (+- tolerance)
         mask = cv2.inRange(v_channel, np.array(max_v_value - self.brightness_diff), np.array(max_v_value + self.brightness_diff))
+        
+        # Only apply mask to non-transparent pixels
+        mask[alpha_channel == 0] = 0
 
-        # create empty black image
+        # create empty white image (to make background white)
         result = np.full((image.shape[0], image.shape[1], 3), 255, dtype=np.uint8)
 
-        # set pixels of mask to white
+        # set pixels of mask to black (so text becomes black)
         result[mask == 255] = [0, 0, 0]
 
         img = Image.fromarray(result)
