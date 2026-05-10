@@ -121,20 +121,25 @@ class SubtitleConverter:
         progress_bar = tqdm(all_sets, unit=" ds")
         for ds in progress_bar:
             if ds.has_image:
-                pds = ds.pds[0] # get Palette Definition Segment
-                ods = ds.ods[0] # get Object Definition Segment
-                img = im.make_image(ods, pds)
+                try:
+                    pds = ds.pds[0] # get Palette Definition Segment
+                    ods = ds.ods[0] # get Object Definition Segment
+                    img = im.make_image(ods, pds)
 
-                # TODO add exit code check for ImageMaker
-                
-                if self.keep_imgs:
-                    image = Image.fromarray(img, 'RGBA')
-                    image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
-                
-                img = self.process_image(img/255)
+                    # TODO add exit code check for ImageMaker
+                    
+                    if self.keep_imgs:
+                        image = Image.fromarray(img, 'RGBA')
+                        image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
+                    
+                    img = self.process_image(img/255)
 
-                sub_text = pytesseract.image_to_string(img, lang)
-                sub_start = ods.presentation_timestamp
+                    sub_text = pytesseract.image_to_string(img, lang)
+                    sub_start = ods.presentation_timestamp
+                except Exception as e:
+                    self.config.logger.warning(f'Error processing image in subtitle #{track_id}: {e}. Skipping this image.')
+                    sub_text = ''
+                    sub_start = ds.start[0].presentation_timestamp if ds.start else 0
             else:
                 start_time = SubRipTime(milliseconds=int(sub_start))
                 end_time = SubRipTime(milliseconds=int(ds.end[0].presentation_timestamp))

@@ -22,6 +22,10 @@ class ImageMaker:
                 color = ods_bytes[i]
                 length = 1
             else:
+                # Check if we have at least one more byte
+                if i + 1 >= len(ods_bytes):
+                    break
+                    
                 check = ods_bytes[i+1]
                 if check == 0:
                     incr = 2
@@ -34,14 +38,23 @@ class ImageMaker:
                     color = 0
                     length = check
                 elif check < 128:
+                    # Need at least 3 bytes: i, i+1, i+2
+                    if i + 2 >= len(ods_bytes):
+                        break
                     incr = 3
                     color = 0
                     length = ((check - 64) << 8) + ods_bytes[i + 2]
                 elif check < 192:
+                    # Need at least 3 bytes: i, i+1, i+2
+                    if i + 2 >= len(ods_bytes):
+                        break
                     incr = 3
-                    color = ods_bytes[min(i+2, len(ods_bytes)-1)]
+                    color = ods_bytes[i+2]
                     length = check - 128
                 else:
+                    # Need at least 4 bytes: i, i+1, i+2, i+3
+                    if i + 3 >= len(ods_bytes):
+                        break
                     incr = 4
                     color = ods_bytes[i+3]
                     length = ((check - 192) << 8) + ods_bytes[i + 2]
