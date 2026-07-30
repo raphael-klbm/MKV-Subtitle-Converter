@@ -4,7 +4,6 @@
 #define MyAppName "MKV Subtitle Converter"
 #define MyAppPublisher "Raphael Kleebaum"
 #define MyAppURL "https://github.com/raphael-klbm/MKV-Subtitle-Converter"
-#define MyAppExeName "MKV Subtitle Converter Runner.exe"
 
 #ifndef MyAppVersion
   #define MyAppVersion "1.0.0"
@@ -19,6 +18,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{9E2EC6EF-3FF0-48D9-BBCF-0F452BC5E112}}
 AppName={#MyAppName}
+AppExeName={#MyAppExeName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -44,7 +44,7 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\config.ini"; DestDir: "{commonappdata}\MKV Subtitle Converter"; DestName: "config.ini"; Flags: onlyifdoesntexist
 Source: "..\langs_complete\*"; DestDir: "{app}\languages"; Flags: recursesubdirs
 Source: "..\gui\themes\*"; DestDir: "{app}\gui\themes"; Flags: recursesubdirs
@@ -52,12 +52,12 @@ Source: "..\licenses\*"; DestDir: "{app}\licenses"; Flags: recursesubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 ; TODO: The second is currently does not work in Windows but should be the correct one. It's included just to be safe.
