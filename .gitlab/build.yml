@@ -130,7 +130,7 @@ build_windows_installer:
   script:
     - choco install innosetup -y
     - Copy-Item "dist\MKV Subtitle Converter.exe" -Destination "build\MKV Subtitle Converter Runner.exe"
-    - '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$VERSION build\mkv-subtitle-converter-installer.iss'
+    - '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$VERSION .gitlab\mkv-subtitle-converter-installer.iss'
     - Copy-Item "build\Output\MKV-Subtitle-Converter.exe" -Destination "build\Output\MKV-Subtitle-Converter-$VERSION-amd64.exe"
   artifacts:
     paths:
