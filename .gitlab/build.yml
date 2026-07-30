@@ -1,0 +1,228 @@
+variables:
+  VERSION: 1.5.0
+
+stages:
+  - build
+  - package
+
+default:
+  interruptible: true
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# ==========================================
+# LINUX AMD64 BUILDS
+# ==========================================
+
+build_linux_executable:
+  stage: build
+  image: python:3.13-slim
+  before_script:
+    - apt-get update && apt-get install -y binutils
+  script:
+    - python -m pip install --upgrade pip
+    - pip install babel==2.16.0
+        certifi==2024.2.2
+        chardet==5.2.0
+        charset-normalizer==3.3.2
+        colorama==0.4.6
+        darkdetect==0.8.0
+        idna==3.7
+        iso-639==0.4.5
+        numpy>=2.1.0
+        opencv-python==4.9.0.80
+        packaging==24.0
+        pillow==12.2.0
+        pysrt==1.1.2
+        pysubs2==1.6.1
+        pytesseract==0.3.10
+        requests==2.31.0
+        tqdm==4.66.2
+        urllib3==2.2.1
+        pyinstaller
+    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" -y --clean --onefile
+    - mv dist/mkv-subtitle-converter dist/mkv-subtitle-converter-$VERSION-amd64
+  artifacts:
+    paths:
+      - dist/mkv-subtitle-converter-$VERSION-amd64
+
+build_deb_package:
+  stage: package
+  image: ubuntu:latest
+  needs:
+    - job: build_linux_executable
+  script:
+    - mkdir mkv-subtitle-converter
+    - mkdir -p mkv-subtitle-converter/usr/bin
+    - mkdir -p mkv-subtitle-converter/usr/share/applications
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter
+    - mkdir -p mkv-subtitle-converter/DEBIAN
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes
+
+    - cp -r langs_complete/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages/
+    - cp -r gui/themes/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes/
+
+    - cp dist/mkv-subtitle-converter-$VERSION-amd64 mkv-subtitle-converter/usr/bin/mkv-subtitle-converter
+
+    - |
+      cat <<EOF > mkv-subtitle-converter/DEBIAN/control
+      Package: mkv-subtitle-converter
+      Priority: optional
+      Section: utils
+      Version: $VERSION
+      Architecture: amd64
+      Maintainer: raphael-klbm <raphaelkleebaum@yahoo.de>
+      Depends: libc6, zlib1g
+      Description: Simply convert PGS and VOB subtitles to SRT subtitles in mkv files
+       This program extracts all subtitles in a MKV file, converts them to text
+       based subtitles using OCR and replace the old subtitles with the newly
+       created subtitle files.
+      EOF
+
+    - |
+      cat <<EOF > mkv-subtitle-converter/usr/share/applications/mkv-subtitle-converter.desktop
+      [Desktop Entry]
+      Name=MKV Subtitle Converter
+      Comment=Simply convert PGS subtitles to SRT subtitles in mkv files
+      Exec=/usr/bin/mkv-subtitle-converter
+      Terminal=false
+      Type=Application
+      Categories=Utility;Application;
+      EOF
+
+    - dpkg-deb --root-owner-group --build mkv-subtitle-converter
+    - mv mkv-subtitle-converter.deb mkv-subtitle-converter-$VERSION-amd64.deb
+  artifacts:
+    paths:
+      - mkv-subtitle-converter-$VERSION-amd64.deb
+
+
+# ==========================================
+# WINDOWS AMD64 BUILDS
+# ==========================================
+
+.windows_job:
+  tags:
+    - saas-windows-medium-amd64
+
+build_windows_executable:
+  extends:
+    - .windows_job
+  stage: build
+  script:
+    - python -m pip install --upgrade pip
+    - pip install babel==2.16.0 certifi==2024.2.2 chardet==5.2.0 charset-normalizer==3.3.2 colorama==0.4.6 darkdetect==0.8.0 idna==3.7 iso-639==0.4.5 "numpy>=2.1.0" opencv-python==4.9.0.80 packaging==24.0 pillow pysrt==1.1.2 pysubs2==1.6.1 pytesseract==0.3.10 requests==2.31.0 tqdm==4.66.2 urllib3==2.2.1 pyinstaller
+    - pyinstaller main.py -w -n "MKV Subtitle Converter" --add-data "./langs_complete;./languages" --add-data "gui\themes;gui\themes" -y --clean --onefile
+  artifacts:
+    paths:
+      - "dist/MKV Subtitle Converter.exe"
+    expire_in: 1h
+
+build_windows_installer:
+  extends:
+    - .windows_job
+  stage: package
+  needs:
+    - job: build_windows_executable
+  script:
+    - choco install innosetup -y
+    - Copy-Item "dist\MKV Subtitle Converter.exe" -Destination "build\MKV Subtitle Converter Runner.exe"
+    - '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$VERSION build\mkv-subtitle-converter-installer.iss'
+    - Copy-Item "build\Output\MKV-Subtitle-Converter.exe" -Destination "build\Output\MKV-Subtitle-Converter-$VERSION-amd64.exe"
+  artifacts:
+    paths:
+      - build/Output/MKV-Subtitle-Converter-$VERSION-amd64.exe
+
+
+# ==========================================
+# LINUX AARCH64 BUILDS
+# ==========================================
+
+build_linux_arm64_executable:
+  stage: build
+  tags:
+    - saas-linux-small-arm64
+  image: python:3.13-slim
+  before_script:
+    - apt-get update && apt-get install -y binutils
+  script:
+    - python -m pip install --upgrade pip
+    - pip install babel==2.16.0
+        certifi==2024.2.2
+        chardet==5.2.0
+        charset-normalizer==3.3.2
+        colorama==0.4.6
+        darkdetect==0.8.0
+        idna==3.7
+        iso-639==0.4.5
+        numpy>=2.1.0
+        opencv-python==4.9.0.80
+        packaging==24.0
+        pillow==12.2.0
+        pysrt==1.1.2
+        pysubs2==1.6.1
+        pytesseract==0.3.10
+        requests==2.31.0
+        tqdm==4.66.2
+        urllib3==2.2.1
+        pyinstaller
+    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" -y --clean --onefile
+    - mv dist/mkv-subtitle-converter dist/mkv-subtitle-converter-$VERSION-aarch64
+  artifacts:
+    paths:
+      - dist/mkv-subtitle-converter-$VERSION-aarch64
+
+build_arm64_deb_package:
+  stage: package
+  tags:
+    - saas-linux-small-arm64
+  needs:
+    - job: build_linux_arm64_executable
+  script:
+    - mkdir mkv-subtitle-converter
+    - mkdir -p mkv-subtitle-converter/usr/bin
+    - mkdir -p mkv-subtitle-converter/usr/share/applications
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter
+    - mkdir -p mkv-subtitle-converter/DEBIAN
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes
+
+    - cp -r langs_complete/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages/
+    - cp -r gui/themes/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes/
+
+    - cp dist/mkv-subtitle-converter-$VERSION-aarch64 mkv-subtitle-converter/usr/bin/mkv-subtitle-converter
+
+    - |
+      cat <<EOF > mkv-subtitle-converter/DEBIAN/control
+      Package: mkv-subtitle-converter
+      Priority: optional
+      Section: utils
+      Version: $VERSION
+      Architecture: aarch64
+      Maintainer: raphael-klbm <raphaelkleebaum@yahoo.de>
+      Depends: libc6, zlib1g
+      Description: Simply convert PGS and VOB subtitles to SRT subtitles in mkv files
+       This program extracts all subtitles in a MKV file, converts them to text
+       based subtitles using OCR and replace the old subtitles with the newly
+       created subtitle files.
+      EOF
+
+    - |
+      cat <<EOF > mkv-subtitle-converter/usr/share/applications/mkv-subtitle-converter.desktop
+      [Desktop Entry]
+      Name=MKV Subtitle Converter
+      Comment=Simply convert PGS subtitles to SRT subtitles in mkv files
+      Exec=/usr/bin/mkv-subtitle-converter
+      Terminal=false
+      Type=Application
+      Categories=Utility;Application;
+      EOF
+
+    - dpkg-deb --root-owner-group --build mkv-subtitle-converter
+    - cp mkv-subtitle-converter.deb mkv-subtitle-converter-aarch64.deb
+  artifacts:
+    paths:
+      - mkv-subtitle-converter-aarch64.deb

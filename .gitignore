@@ -4,7 +4,6 @@ __pycache__/
 build/
 dist/
 *.spec
-*.iss
 Output/
 *.png
 logs/
