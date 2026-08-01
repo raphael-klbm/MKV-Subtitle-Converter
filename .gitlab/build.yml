@@ -146,9 +146,9 @@ build_linux_arm64_executable:
   stage: build
   tags:
     - saas-linux-small-arm64
-  image: python:3.13-slim
+  image: python:3.12-slim
   before_script:
-    - apt-get update && apt-get install -y binutils
+    - apt-get update && apt-get install -y binutils python3-tk tk-dev tcl-dev
   script:
     - python -m pip install --upgrade pip
     - pip install babel==2.16.0
