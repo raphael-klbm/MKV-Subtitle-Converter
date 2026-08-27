@@ -34,17 +34,16 @@ class TestSubtitleFileEndings:
         assert SubtitleFileEndings.get_format("srt") is SubtitleFileEndings.SRT
 
     def test_get_format_unknown_returns_value_error(self):
-        # NOTE: the implementation *returns* a ValueError instance (not raises)
-        result = SubtitleFileEndings.get_format("xyz")
-        assert isinstance(result, ValueError)
+        with pytest.raises(ValueError):
+            SubtitleFileEndings.get_format("xyz")
 
     def test_get_format_full_filename(self):
         # 'subtitle.srt' contains 'srt' as a substring of its value
         assert SubtitleFileEndings.get_format("subtitle.srt") is SubtitleFileEndings.SRT
 
     def test_get_format_handle_nonexistent_name(self):
-        result = SubtitleFileEndings.get_format("nonexistent")
-        assert isinstance(result, ValueError)
+        with pytest.raises(ValueError):
+            SubtitleFileEndings.get_format("nonexistent")
 
     def test_get_format_wrong_type_as_arg(self):
         # The function expects a string; passing an int shouldn't crash

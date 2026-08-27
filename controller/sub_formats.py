@@ -25,7 +25,7 @@ class SubtitleFileEndings(Enum):
             if sub_ending.value.lower() in format:
                 return sub_ending
             
-        return ValueError(f'Unknwon file ending: {format}.')
+        raise ValueError(f'Unknwon file ending: {format}.')
     
 class SubtitleFormats(Enum):
     SRT  = "SubRip Text (.srt)"
