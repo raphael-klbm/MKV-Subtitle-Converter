@@ -175,7 +175,7 @@ class SubtitleConverter:
             x, y, _ = np.where(image < 1)
         else:
             x, y, _ = np.where(image > 0)
-        image = image[max(np.min(x), 0):np.max(x), max(np.min(y), 0): np.max(y)]
+        image = image[max(np.min(x), 0):np.max(x) + 1, max(np.min(y), 0):np.max(y) + 1]
 
         return image
     
