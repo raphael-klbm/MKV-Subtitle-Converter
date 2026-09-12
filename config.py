@@ -18,6 +18,8 @@ class Config:
         LANGUAGE = 'sLanguage'
         FIRST_START = 'bFirstStart'
         THEME = 'sTheme'
+        OCR_BACKEND = 'sOcrBackend'
+        OCR_LANG_PATH = 'sOcrLangPath'
 
     
     config = None
@@ -49,6 +51,8 @@ class Config:
         settings[self.Settings.LANGUAGE] = 'en_US'
         settings[self.Settings.FIRST_START] = True
         settings[self.Settings.THEME] = 'Light'
+        settings[self.Settings.OCR_BACKEND] = 'tesserocr'
+        settings[self.Settings.OCR_LANG_PATH] = ''
 
         self.save_settings(settings)
 
