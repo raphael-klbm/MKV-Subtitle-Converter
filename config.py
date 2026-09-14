@@ -116,8 +116,8 @@ class Config:
             
     def _get_section(self, setting: Settings):
         config = {
-            'General': ['bUpdates', 'sLanguage', 'sTheme'],
-            'Misc': ['bFirstStart']
+            'General': ['bUpdates', 'sLanguage', 'sTheme', 'sOcrBackend'],
+            'Misc': ['bFirstStart', 'sOcrLangPath']
         }
 
         for section, settings in config.items():
