@@ -1,6 +1,9 @@
 from threading import Thread
 import backend.helper as subhelper
 import os
+from backend.ocr.ocr_backend import OCRBackend
+from backend.ocr.pytesseract_backend import PytesseractBackend
+from backend.ocr.tesserocr_backend import TesserOCRBackend
 import backend.pgs.pgsreader as pgsreader
 from backend.pgs.imagemaker import ImageMaker
 from tqdm import tqdm
@@ -15,8 +18,6 @@ import numpy as np
 from PIL import Image
 from datetime import timedelta
 import cv2
-from backend.ocr.pytesseract_backend import PytesseractBackend
-from backend.ocr.tesserocr_backend import TesserOCRBackend
 
 
 class SubtitleConverter:
@@ -34,12 +35,6 @@ class SubtitleConverter:
         self.config = Config()
         self.translate = self.config.translate
 
-        match self.config.get_value(Config.Settings.OCR_BACKEND).lower():
-            case 'pytesseract':
-                self.ocr = PytesseractBackend()
-            case 'tesseocr':
-                language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
-                self.ocr = TesserOCRBackend(language_path, '')
 
     def convert_subtitles(self): # convert PGS subtitles to SRT subtitles
         thread_pool = []
@@ -77,19 +72,28 @@ class SubtitleConverter:
                 open(os.path.join(self.sub_dir, f'{id}.{self.format}'), 'w').close()
                 new_sub.save(os.path.join(self.sub_dir, f'{id}.{self.format}'))
 
+    def init_ocr(self, language: str) -> OCRBackend:
+        match self.config.get_value(Config.Settings.OCR_BACKEND).lower():
+            case 'pytesseract':
+                return PytesseractBackend(language)
+            case 'tesserocr':
+                language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
+                return TesserOCRBackend(language_path, language)
+            
     def __get_lang(self, lang_code: str) -> str | None:
 
+        ocr = self.init_ocr(lang_code)
         lang_code = subhelper.convert_language(lang_code)
         new_lang = self.diff_langs.get(lang_code, lang_code) # check if user wants to use a different language
 
         if new_lang is  not None:
             # if new_lang in pytesseract.get_languages():
-            if new_lang in self.ocr.get_languages():
+            if new_lang in ocr.get_languages():
                 return new_lang
             else:
                 self.config.logger.warning(f'Language "{new_lang}" is not installed, using "{lang_code}" instead.')
 
-        if lang_code in self.ocr.get_languages():  # when user doesn't want to change language or changed language is not installed
+        if lang_code in ocr.get_languages():  # when user doesn't want to change language or changed language is not installed
             return lang_code
         else:
             self.config.logger.warning(f'Language "{lang_code}" is not installed, using English instead.')
@@ -127,6 +131,7 @@ class SubtitleConverter:
         sub_index = 0
         im = ImageMaker(self.text_brightness_diff)
         progress_bar = tqdm(all_sets, unit=" ds")
+        ocr = self.init_ocr(lang)
 
         for ds in progress_bar:
             if ds.has_image:
@@ -143,8 +148,7 @@ class SubtitleConverter:
                     
                     img = self.process_image(img/255)
 
-                    # sub_text = pytesseract.image_to_string(img, lang)
-                    sub_text = self.ocr.extract_text(img)
+                    sub_text = ocr.extract_text(img)
                     sub_start = ods.presentation_timestamp
                 except Exception as e:
                     self.config.logger.warning(f'Error processing image in subtitle #{track_id}: {e}. Skipping this image.')
@@ -158,7 +162,7 @@ class SubtitleConverter:
 
         self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
         srt.save(srt_file) # save as SRT file
-        self.ocr.__exit__()
+        ocr.__exit__()
 
         # remove \f and new double empty lines from file
         # with open(srt_file, "r") as file:
@@ -226,6 +230,7 @@ class SubtitleConverter:
         sub_text = ""
         sub_start = 0
         sub_index = 0
+        ocr = self.init_ocr(lang)
 
         for pack in tqdm(vob_sub_merged_pack_list):
             img = self.extract_subtitle_image_from_pack(pack, palette)
@@ -237,7 +242,7 @@ class SubtitleConverter:
             img = self.crop_image(img)
             img = self.process_image(img)
 
-            sub_text = self.ocr.extract_text(img)
+            sub_text = ocr.extract_text(img)
             
             sub_start, sub_end = self.create_subfile_timings(pack)
             start_time = SubRipTime(seconds=sub_start)
@@ -248,7 +253,7 @@ class SubtitleConverter:
 
         # self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
         srt.save(srt_file) # save as SRT file
-        self.ocr.__exit__()
+        ocr.__exit__()
 
         # remove \f and new double empty lines from file
         # with open(srt_file, "r") as file:
