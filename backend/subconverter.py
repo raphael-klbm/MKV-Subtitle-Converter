@@ -82,18 +82,19 @@ class SubtitleConverter:
             
     def __get_lang(self, lang_code: str) -> str | None:
 
-        ocr = self.init_ocr(lang_code)
         lang_code = subhelper.convert_language(lang_code)
         new_lang = self.diff_langs.get(lang_code, lang_code) # check if user wants to use a different language
 
+        with self.init_ocr(lang_code) as ocr:
+            languages = ocr.get_languages()
+
         if new_lang is  not None:
-            # if new_lang in pytesseract.get_languages():
-            if new_lang in ocr.get_languages():
+            if new_lang in languages:
                 return new_lang
             else:
                 self.config.logger.warning(f'Language "{new_lang}" is not installed, using "{lang_code}" instead.')
 
-        if lang_code in ocr.get_languages():  # when user doesn't want to change language or changed language is not installed
+        if lang_code in languages:  # when user doesn't want to change language or changed language is not installed
             return lang_code
         else:
             self.config.logger.warning(f'Language "{lang_code}" is not installed, using English instead.')
@@ -131,38 +132,37 @@ class SubtitleConverter:
         sub_index = 0
         im = ImageMaker(self.text_brightness_diff)
         progress_bar = tqdm(all_sets, unit=" ds")
-        ocr = self.init_ocr(lang)
 
-        for ds in progress_bar:
-            if ds.has_image:
-                try:
-                    pds = ds.pds[0] # get Palette Definition Segment
-                    ods = ds.ods[0] # get Object Definition Segment
-                    img = im.make_image(ods, pds)
+        with self.init_ocr(lang) as ocr:
+            for ds in progress_bar:
+                if ds.has_image:
+                    try:
+                        pds = ds.pds[0] # get Palette Definition Segment
+                        ods = ds.ods[0] # get Object Definition Segment
+                        img = im.make_image(ods, pds)
 
-                    # TODO add exit code check for ImageMaker
-                    
-                    if self.keep_imgs:
-                        image = Image.fromarray(img, 'RGBA')
-                        image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
-                    
-                    img = self.process_image(img/255)
+                        # TODO add exit code check for ImageMaker
+                        
+                        if self.keep_imgs:
+                            image = Image.fromarray(img, 'RGBA')
+                            image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
+                        
+                        img = self.process_image(img/255)
 
-                    sub_text = ocr.extract_text(img)
-                    sub_start = ods.presentation_timestamp
-                except Exception as e:
-                    self.config.logger.warning(f'Error processing image in subtitle #{track_id}: {e}. Skipping this image.')
-                    sub_text = ''
-                    sub_start = ds.start[0].presentation_timestamp if ds.start else 0
-            else:
-                start_time = SubRipTime(milliseconds=int(sub_start))
-                end_time = SubRipTime(milliseconds=int(ds.end[0].presentation_timestamp))
-                srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
-                sub_index += 1
+                        sub_text = ocr.extract_text(img)
+                        sub_start = ods.presentation_timestamp
+                    except Exception as e:
+                        self.config.logger.warning(f'Error processing image in subtitle #{track_id}: {e}. Skipping this image.')
+                        sub_text = ''
+                        sub_start = ds.start[0].presentation_timestamp if ds.start else 0
+                else:
+                    start_time = SubRipTime(milliseconds=int(sub_start))
+                    end_time = SubRipTime(milliseconds=int(ds.end[0].presentation_timestamp))
+                    srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
+                    sub_index += 1
 
         self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
         srt.save(srt_file) # save as SRT file
-        ocr.__exit__()
 
         # remove \f and new double empty lines from file
         # with open(srt_file, "r") as file:
@@ -230,30 +230,29 @@ class SubtitleConverter:
         sub_text = ""
         sub_start = 0
         sub_index = 0
-        ocr = self.init_ocr(lang)
 
-        for pack in tqdm(vob_sub_merged_pack_list):
-            img = self.extract_subtitle_image_from_pack(pack, palette)
-            
-            if self.keep_imgs:
-                image = Image.fromarray((img * 255).astype('uint8'), 'RGBA')
-                image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
+        with self.init_ocr(lang) as ocr:
+            for pack in tqdm(vob_sub_merged_pack_list):
+                img = self.extract_subtitle_image_from_pack(pack, palette)
+                
+                if self.keep_imgs:
+                    image = Image.fromarray((img * 255).astype('uint8'), 'RGBA')
+                    image.save(os.path.join(track_img_dir, f"{sub_index}.webp"))
 
-            img = self.crop_image(img)
-            img = self.process_image(img)
+                img = self.crop_image(img)
+                img = self.process_image(img)
 
-            sub_text = ocr.extract_text(img)
-            
-            sub_start, sub_end = self.create_subfile_timings(pack)
-            start_time = SubRipTime(seconds=sub_start)
-            end_time = SubRipTime(seconds=sub_end)
-            
-            srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
-            sub_index += 1
+                sub_text = ocr.extract_text(img)
+                
+                sub_start, sub_end = self.create_subfile_timings(pack)
+                start_time = SubRipTime(seconds=sub_start)
+                end_time = SubRipTime(seconds=sub_end)
+                
+                srt.append(SubRipItem(sub_index, start_time, end_time, sub_text))
+                sub_index += 1
 
         # self.config.logger.debug(f'Finished converting subtitle #{track_id} in {int(progress_bar.format_dict["elapsed"])}s.')
         srt.save(srt_file) # save as SRT file
-        ocr.__exit__()
 
         # remove \f and new double empty lines from file
         # with open(srt_file, "r") as file:

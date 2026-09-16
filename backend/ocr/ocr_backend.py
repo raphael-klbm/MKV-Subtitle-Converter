@@ -6,6 +6,10 @@ class OCRBackend(abc.ABC):
         super().__init__()
 
     @abc.abstractmethod
+    def __enter__(self):
+        return self
+
+    @abc.abstractmethod
     def __exit__(self, exc_type, exc, tb):
         pass
     

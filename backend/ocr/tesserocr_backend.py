@@ -7,6 +7,9 @@ class TesserOCRBackend(OCRBackend):
         self.lang_path = language_path
         self.ocr_api = tesserocr.PyTessBaseAPI(path=language_path, lang=lang)
 
+    def __enter__(self):
+        return self
+
     def __exit__(self, exc_type, exc, tb):
         self.ocr_api.End()
 
