@@ -18,6 +18,6 @@ class OCRBackend(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_languages(self, lang_path: str = ''):
+    def get_languages(self):
         pass
 
