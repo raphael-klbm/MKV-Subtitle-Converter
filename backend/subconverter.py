@@ -75,7 +75,7 @@ class SubtitleConverter:
     def init_ocr(self, language: str) -> OCRBackend:
         match self.config.get_value(Config.Settings.OCR_BACKEND).lower():
             case 'pytesseract':
-                return PytesseractBackend(language)
+                return PytesseractBackend('', language)
             case 'tesserocr':
                 language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
                 return TesserOCRBackend(language_path, language)
