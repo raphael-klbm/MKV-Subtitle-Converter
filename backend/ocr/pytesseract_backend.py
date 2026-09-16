@@ -6,7 +6,6 @@ class PytesseractBackend(OCRBackend):
         super().__init__()
         self.lang_path = language_path
         self.language = language
-        print(f"Using pytesseract backend")
 
     def __enter__(self):
         return self
