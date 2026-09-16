@@ -2,10 +2,10 @@ from backend.ocr.ocr_backend import OCRBackend
 import tesserocr
 
 class TesserOCRBackend(OCRBackend):
-    def __init__(self, language_path, lang: str):
+    def __init__(self, language_path, language: str):
         super().__init__()
         self.lang_path = language_path
-        self.ocr_api = tesserocr.PyTessBaseAPI(path=language_path, lang=lang)
+        self.ocr_api = tesserocr.PyTessBaseAPI(path=language_path, lang=language)
 
     def __enter__(self):
         return self
