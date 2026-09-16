@@ -79,6 +79,9 @@ class SubtitleConverter:
             case 'tesserocr':
                 language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
                 return TesserOCRBackend(language_path, language)
+            case _:
+                self.config.logger.warning(f'Invalid OCR backend "{self.config.get_value(Config.Settings.OCR_BACKEND)}" set in config, defaulting to pytesseract.')
+                return PytesseractBackend('', language)  # default to pytesseract if no valid backend is set
             
     def __get_lang(self, lang_code: str) -> str | None:
 
