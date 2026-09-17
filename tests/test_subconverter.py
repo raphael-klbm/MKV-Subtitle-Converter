@@ -35,35 +35,38 @@ def converter(tmp_path):
     return conv
 
 
+def _mock_ocr_backend(languages):
+    """Helper to mock init_ocr returning a backend context manager with given languages."""
+    mock_ocr = MagicMock()
+    mock_ocr.__enter__.return_value = mock_ocr
+    mock_ocr.get_languages.return_value = languages
+    return mock_ocr
+
+
 class TestGetLang:
     """__get_lang picks the OCR language, honouring user overrides."""
 
     def test_returns_original_when_no_override(self, converter):
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["eng", "deu"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["eng", "deu"])):
             assert converter._SubtitleConverter__get_lang("eng") == "eng"
 
     def test_returns_override_when_installed(self, converter):
         converter.diff_langs = {"deu": "fra"}
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["fra"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["fra"])):
             assert converter._SubtitleConverter__get_lang("deu") == "fra"
 
     def test_falls_back_to_original_when_override_not_installed(self, converter):
         converter.diff_langs = {"deu": "fra"}
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["deu"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["deu"])):
             assert converter._SubtitleConverter__get_lang("deu") == "deu"
 
     def test_returns_none_when_nothing_installed(self, converter):
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["fra"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["fra"])):
             assert converter._SubtitleConverter__get_lang("deu") is None
 
     def test_b_code_is_converted_before_lookup(self, converter):
         # 'ger' (B code) -> 'deu' (T code) must happen before the installed check
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["deu"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["deu"])):
             assert converter._SubtitleConverter__get_lang("ger") == "deu"
 
     def test_override_code_is_converted_upstream(self, converter):
@@ -73,14 +76,12 @@ class TestGetLang:
         # value is already a T code. This test documents that __get_lang
         # itself does NOT need to convert the override value.
         converter.diff_langs = {"eng": "deu"}
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["deu"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["deu"])):
             assert converter._SubtitleConverter__get_lang("eng") == "deu"
 
     def test_logs_warning_when_override_not_installed(self, converter):
         converter.diff_langs = {"deu": "fra"}
-        with patch("backend.subconverter.pytesseract.get_languages",
-                   return_value=["deu"]):
+        with patch.object(converter, "init_ocr", return_value=_mock_ocr_backend(["deu"])):
             converter._SubtitleConverter__get_lang("deu")
             converter.config.logger.warning.assert_called_once()
 
