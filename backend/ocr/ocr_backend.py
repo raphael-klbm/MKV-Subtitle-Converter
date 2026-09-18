@@ -12,6 +12,10 @@ class OCRBackend(abc.ABC):
     @abc.abstractmethod
     def __exit__(self, exc_type, exc, tb):
         pass
+
+    @abc.abstractmethod
+    def __del__(self):
+        pass
     
     @abc.abstractmethod
     def extract_text(self, image: Image.Image) -> str:

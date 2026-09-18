@@ -13,6 +13,9 @@ class TesserOCRBackend(OCRBackend):
     def __exit__(self, exc_type, exc, tb):
         self.ocr_api.End()
 
+    def __del__(self):
+        self.ocr_api.End()
+
     def extract_text(self, image):
         self.ocr_api.SetImage(image)
         return self.ocr_api.GetUTF8Text()

@@ -13,6 +13,9 @@ class PytesseractBackend(OCRBackend):
     def __exit__(self, exc_type, exc, tb):
         pass
 
+    def __del__(self):
+        pass
+
     def extract_text(self, image):
         return pytesseract.image_to_string(image, lang=self.language)
 
