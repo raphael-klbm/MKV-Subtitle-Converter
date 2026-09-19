@@ -1,12 +1,13 @@
 from backend.ocr.ocr_backend import OCRBackend
 import tesserocr
+from config import Config
 
 class TesserOCRBackend(OCRBackend):
     def __init__(self, language_path, language: str):
         super().__init__()
         self.lang_path = language_path
-        print(f"Initializing TesserOCRBackend with language_path: '{language_path}' and language: '{language}'")
-        self.ocr_api = tesserocr.PyTessBaseAPI(path=language_path, lang=language)
+        path = language_path if language_path else None
+        self.ocr_api = tesserocr.PyTessBaseAPI(path=path, lang=language)
 
     def __enter__(self):
         return self
@@ -23,4 +24,10 @@ class TesserOCRBackend(OCRBackend):
 
     @classmethod
     def get_languages(cls, language_path: str = '') -> list[str]:
-        return tesserocr.get_languages(language_path)[1]
+        path = language_path if language_path else None
+
+        if not path:
+            config = Config()
+            config.logger.warning("No language path provided for TesserOCRBackend.get_languages(). Using no path instead.")
+
+        return tesserocr.get_languages(path)[1] if path else tesserocr.get_languages()[1]
