@@ -71,6 +71,14 @@ except ImportError:
     sys.modules["pytesseract"] = _pyt
 
 try:
+    import tesserocr  # type: ignore[reportMissingImports]
+except ImportError:
+    _tess = types.ModuleType("tesserocr")
+    _tess.get_languages = lambda path="": (path, ["eng"])  # type: ignore[reportAttributeAccessIssue]
+    _tess.PyTessBaseAPI = MagicMock if "MagicMock" in dir() else type("_PyTessBaseAPI", (), {"End": lambda self: None, "SetImage": lambda self, img: None, "GetUTF8Text": lambda self: ""})  # type: ignore[reportAttributeAccessIssue]
+    sys.modules["tesserocr"] = _tess
+
+try:
     import cv2  # type: ignore[reportMissingImports]
 except ImportError:
     _cv2 = types.ModuleType("cv2")
