@@ -5,6 +5,7 @@ class TesserOCRBackend(OCRBackend):
     def __init__(self, language_path, language: str):
         super().__init__()
         self.lang_path = language_path
+        print(f"Initializing TesserOCRBackend with language_path: '{language_path}' and language: '{language}'")
         self.ocr_api = tesserocr.PyTessBaseAPI(path=language_path, lang=language)
 
     def __enter__(self):
@@ -20,5 +21,6 @@ class TesserOCRBackend(OCRBackend):
         self.ocr_api.SetImage(image)
         return self.ocr_api.GetUTF8Text()
 
-    def get_languages(self):
-        return tesserocr.get_languages(self.lang_path)[1]
+    @classmethod
+    def get_languages(cls, language_path: str = '') -> list[str]:
+        return tesserocr.get_languages(language_path)[1]

@@ -73,23 +73,37 @@ class SubtitleConverter:
                 new_sub.save(os.path.join(self.sub_dir, f'{id}.{self.format}'))
 
     def init_ocr(self, language: str) -> OCRBackend:
-        match self.config.get_value(Config.Settings.OCR_BACKEND).lower():
+        backend_name = self.config.get_value(Config.Settings.OCR_BACKEND).lower()
+        language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
+
+        match backend_name:
             case 'pytesseract':
                 return PytesseractBackend('', language)
             case 'tesserocr':
-                language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
                 return TesserOCRBackend(language_path, language)
             case _:
                 self.config.logger.warning(f'Invalid OCR backend "{self.config.get_value(Config.Settings.OCR_BACKEND)}" set in config, defaulting to pytesseract.')
                 return PytesseractBackend('', language)  # default to pytesseract if no valid backend is set
+
+    def get_installed_languages(self) -> list[str]:
+        """Get the list of installed OCR languages for the configured backend."""
+        backend_name = self.config.get_value(Config.Settings.OCR_BACKEND).lower()
+        language_path = self.config.get_value(Config.Settings.OCR_LANG_PATH)
+        
+        match backend_name:
+            case 'pytesseract':
+                return PytesseractBackend.get_languages('')
+            case 'tesserocr':
+                return TesserOCRBackend.get_languages(language_path)
+            case _:
+                self.config.logger.warning(f'Invalid OCR backend "{backend_name}" set in config, defaulting to pytesseract.')
+                return PytesseractBackend.get_languages('')  # default to pytesseract if no valid backend is set
             
     def __get_lang(self, lang_code: str) -> str | None:
-
         lang_code = subhelper.convert_language(lang_code)
         new_lang = self.diff_langs.get(lang_code, lang_code) # check if user wants to use a different language
 
-        with self.init_ocr(lang_code) as ocr:
-            languages = ocr.get_languages()
+        languages = self.get_installed_languages()
 
         if new_lang is  not None:
             if new_lang in languages:
