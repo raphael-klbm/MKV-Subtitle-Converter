@@ -25,8 +25,10 @@ class SettingsWindow(tk.Toplevel):
 
         general_settings = SidebarOption(self.sidebar, self.translate("General"), lambda: self.show_frame(GeneralSettings))
         graphics_settings = SidebarOption(self.sidebar, self.translate("Graphics"), lambda: self.show_frame(GraphicsSettings))
+        ocr_settings = SidebarOption(self.sidebar, self.translate("OCR"), lambda: self.show_frame(OCRSettings))
         general_settings.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
         graphics_settings.grid(row=1, column=0, padx=5, pady=(5, 0), sticky="w")
+        ocr_settings.grid(row=2, column=0, padx=5, pady=(5, 0), sticky="w")
 
         # --------------------  MULTI PAGE SETTINGS ----------------------------
 
@@ -36,7 +38,7 @@ class SettingsWindow(tk.Toplevel):
 
         self.frames = {}
 
-        for F in {GeneralSettings, GraphicsSettings}:
+        for F in {GeneralSettings, GraphicsSettings, OCRSettings}:
             frame = F(settings_frames_container)
             self.frames[F] = frame
             frame.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -69,11 +71,13 @@ class SettingsWindow(tk.Toplevel):
         config = Config()
         language_changed = config.get_language() != self.frames[GeneralSettings].language.get()
         theme_changed = config.get_value(Config.Settings.THEME) != self.frames[GraphicsSettings].theme.get()
+        ocr_backend_changed = config.get_value(Config.Settings.OCR_BACKEND) != self.frames[OCRSettings].ocr_backend.get()
+        ocr_lang_path_changed = config.get_value(Config.Settings.OCR_LANG_PATH) != self.frames[OCRSettings].language_path.get()
         config.save_config()
         
         self.destroy()
 
-        if language_changed or theme_changed:
+        if language_changed or theme_changed or ocr_backend_changed or ocr_lang_path_changed:
             self.parent.reload()
 
 # ------------------------ MULTIPAGE FRAMES ------------------------------------
@@ -157,6 +161,66 @@ class GraphicsSettings(SettingsFrame):
         }
 
         self.config.save_settings(settings)
+
+
+class OCRSettings(SettingsFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        # variables
+        self.ocr_backend = tk.StringVar()
+        self.language_path = tk.StringVar()
+
+        # map from config value to translated value for display
+        ocr_backend_value = self.config.get_value(Config.Settings.OCR_BACKEND)
+        ocr_language_path_value = self.config.get_value(Config.Settings.OCR_LANG_PATH)
+
+        if ocr_backend_value == 'pytesseract':
+            self.ocr_backend.set(self.translate("PyTesseract"))
+        elif ocr_backend_value == 'tesserocr':
+            self.ocr_backend.set(self.translate("TesserOCR"))
+        else:
+            self.ocr_backend.set(self.translate("Choose OCR Backend"))
+
+        self.language_path.set(ocr_language_path_value)
+
+        # gui
+        ocr_backend_label = ttk.Label(self, text=self.translate("OCR Backend:"))
+        ocr_backend_label.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
+
+        ocr_backend_list = ttk.Combobox(self, values=[self.translate("PyTesseract"), self.translate("TesserOCR")], textvariable=self.ocr_backend, state="readonly")
+        ocr_backend_list.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+
+        language_path_label = ttk.Label(self, text=self.translate("Language Path:"))
+        language_path_label.grid(row=1, column=0, padx=5, pady=(5, 0), sticky="w")
+
+        language_path_entry = ttk.Entry(self, textvariable=self.language_path)
+        language_path_entry.grid(row=1, column=1, padx=5, pady=(5, 0), sticky="w")
+
+    def save_settings(self):
+            # Map from translated value back to config value for saving
+            ocr_backend_value = self.ocr_backend.get()
+            if ocr_backend_value == self.translate("Pytesseract"):
+                ocr_backend_to_save = "pytesseract"
+            elif ocr_backend_value == self.translate("TesserOCR"):
+                ocr_backend_to_save = "tesserocr"
+            else:
+                ocr_backend_to_save = "pytesseract"  # default to pytesseract if no valid selection
+
+            language_path_value = self.language_path.get()
+
+            language_path_value = language_path_value.strip()
+
+            if not language_path_value.endswith('/') and language_path_value != '':
+                language_path_value += '/'
+
+            settings = {
+                Config.Settings.OCR_BACKEND: ocr_backend_to_save,
+                Config.Settings.OCR_LANG_PATH: language_path_value
+            }
+
+            self.config.save_settings(settings)
+
 
 # ----------------------------- CUSTOM WIDGETS ---------------------------------
 
