@@ -116,12 +116,12 @@ class Config:
             
     def _get_section(self, setting: Settings):
         config = {
-            'General': ['bUpdates', 'sLanguage', 'sTheme', 'sOcrBackend'],
-            'Misc': ['bFirstStart', 'sOcrLangPath']
+            'General': [self.Settings.CHECK_FOR_UPDATES, self.Settings.LANGUAGE, self.Settings.THEME, self.Settings.OCR_BACKEND],
+            'Misc': [self.Settings.FIRST_START, self.Settings.OCR_LANG_PATH]
         }
 
         for section, settings in config.items():
-            if setting.value in settings:
+            if setting in settings:
                 return section
             
     def get_value(self, setting: Settings):
