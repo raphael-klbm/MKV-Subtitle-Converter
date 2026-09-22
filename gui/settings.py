@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from config import Config
+import copy
 
 class SettingsWindow(tk.Toplevel):
     
@@ -63,22 +64,19 @@ class SettingsWindow(tk.Toplevel):
         frame.tkraise()
 
     def save_settings(self):
+
+        config = Config()
+        old_config = {setting: self.config.get_value(setting) for setting in Config.Settings}
         
         for frame in self.frames.values():
             frame.save_settings()
 
         # save changes to config file
-        config = Config()
-        language_changed = config.get_language() != self.frames[GeneralSettings].language.get()
-        theme_changed = config.get_value(Config.Settings.THEME) != self.frames[GraphicsSettings].theme.get().lower()
-        ocr_backend_changed = config.get_value(Config.Settings.OCR_BACKEND) != self.frames[OCRSettings].ocr_backend.get().lower()
-        ocr_lang_path_changed = config.get_value(Config.Settings.OCR_LANG_PATH) != self.frames[OCRSettings].language_path.get()
         config.save_config()
         
         self.destroy()
 
-        # if language_changed or theme_changed or ocr_backend_changed or ocr_lang_path_changed:
-        if any((language_changed, theme_changed, ocr_backend_changed, ocr_lang_path_changed)):
+        if any(self.config.get_value(setting) != old_config[setting] for setting in Config.Settings):
             self.parent.reload()
 
 # ------------------------ MULTIPAGE FRAMES ------------------------------------
