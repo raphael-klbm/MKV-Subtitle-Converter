@@ -70,14 +70,15 @@ class SettingsWindow(tk.Toplevel):
         # save changes to config file
         config = Config()
         language_changed = config.get_language() != self.frames[GeneralSettings].language.get()
-        theme_changed = config.get_value(Config.Settings.THEME) != self.frames[GraphicsSettings].theme.get()
-        ocr_backend_changed = config.get_value(Config.Settings.OCR_BACKEND) != self.frames[OCRSettings].ocr_backend.get()
+        theme_changed = config.get_value(Config.Settings.THEME) != self.frames[GraphicsSettings].theme.get().lower()
+        ocr_backend_changed = config.get_value(Config.Settings.OCR_BACKEND) != self.frames[OCRSettings].ocr_backend.get().lower()
         ocr_lang_path_changed = config.get_value(Config.Settings.OCR_LANG_PATH) != self.frames[OCRSettings].language_path.get()
         config.save_config()
         
         self.destroy()
 
-        if language_changed or theme_changed or ocr_backend_changed or ocr_lang_path_changed:
+        # if language_changed or theme_changed or ocr_backend_changed or ocr_lang_path_changed:
+        if any((language_changed, theme_changed, ocr_backend_changed, ocr_lang_path_changed)):
             self.parent.reload()
 
 # ------------------------ MULTIPAGE FRAMES ------------------------------------
@@ -178,7 +179,7 @@ class OCRSettings(SettingsFrame):
         if ocr_backend_value == 'pytesseract':
             self.ocr_backend.set(self.translate("PyTesseract"))
         elif ocr_backend_value == 'tesserocr':
-            self.ocr_backend.set(self.translate("TesserOCR"))
+            self.ocr_backend.set(self.translate("Tesserocr"))
         else:
             self.ocr_backend.set(self.translate("Choose OCR Backend"))
 
@@ -188,7 +189,7 @@ class OCRSettings(SettingsFrame):
         ocr_backend_label = ttk.Label(self, text=self.translate("OCR Backend:"))
         ocr_backend_label.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
 
-        ocr_backend_list = ttk.Combobox(self, values=[self.translate("PyTesseract"), self.translate("TesserOCR")], textvariable=self.ocr_backend, state="readonly")
+        ocr_backend_list = ttk.Combobox(self, values=[self.translate("PyTesseract"), self.translate("Tesserocr")], textvariable=self.ocr_backend, state="readonly")
         ocr_backend_list.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
 
         language_path_label = ttk.Label(self, text=self.translate("Language Path:"))
@@ -202,7 +203,7 @@ class OCRSettings(SettingsFrame):
             ocr_backend_value = self.ocr_backend.get()
             if ocr_backend_value == self.translate("Pytesseract"):
                 ocr_backend_to_save = "pytesseract"
-            elif ocr_backend_value == self.translate("TesserOCR"):
+            elif ocr_backend_value == self.translate("Tesserocr"):
                 ocr_backend_to_save = "tesserocr"
             else:
                 ocr_backend_to_save = "pytesseract"  # default to pytesseract if no valid selection
