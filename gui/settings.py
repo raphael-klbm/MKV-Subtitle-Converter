@@ -190,7 +190,7 @@ class OCRSettings(SettingsFrame):
         ocr_backend_list = ttk.Combobox(self, values=[self.translate("PyTesseract"), self.translate("Tesserocr")], textvariable=self.ocr_backend, state="readonly")
         ocr_backend_list.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
 
-        language_path_label = ttk.Label(self, text=self.translate("Language Path:"))
+        language_path_label = ttk.Label(self, text=self.translate("Language files path:"))
         language_path_label.grid(row=1, column=0, padx=5, pady=(5, 0), sticky="w")
 
         language_path_entry = ttk.Entry(self, textvariable=self.language_path)
