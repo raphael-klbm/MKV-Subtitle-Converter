@@ -16,12 +16,11 @@ workflow:
 # LINUX AMD64 BUILDS
 # ==========================================
 
-build_linux_executable:
+.linux_amd64_build:
   stage: build
   image: python:3.13-slim
   before_script:
-    - apt-get update && apt-get install -y binutils
-  script:
+    - apt-get update && apt-get install -y binutils python3-tk tk-dev tcl-dev g++ pkg-config libtesseract-dev libleptonica-dev
     - python -m pip install --upgrade pip
     - pip install babel==2.16.0
         certifi==2024.2.2
@@ -39,14 +38,31 @@ build_linux_executable:
         pysubs2==1.6.1
         pytesseract==0.3.10
         requests==2.31.0
+        tesserocr==2.11.0
         tqdm==4.66.2
         urllib3==2.2.1
         pyinstaller
-    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" -y --clean --onefile
+
+build_linux_executable:
+  extends:
+    - .linux_amd64_build
+  script:
+    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" --hidden-import cysignals -y --clean --onefile
     - mv dist/mkv-subtitle-converter dist/mkv-subtitle-converter-$VERSION-amd64
   artifacts:
     paths:
       - dist/mkv-subtitle-converter-$VERSION-amd64
+    expire_in: 1h
+
+build_linux_portable_executable:
+  extends:
+    - .linux_amd64_build
+  script:
+    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" --hidden-import cysignals --add-data "langs_complete:languages" --add-data "gui/themes:gui/themes" --add-data "licenses:licenses" -y --clean --onefile
+    - mv dist/mkv-subtitle-converter dist/mkv-subtitle-converter-$VERSION-amd64-portable
+  artifacts:
+    paths:
+      - dist/mkv-subtitle-converter-$VERSION-amd64-portable
 
 build_deb_package:
   stage: package
@@ -61,9 +77,11 @@ build_deb_package:
     - mkdir -p mkv-subtitle-converter/DEBIAN
     - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages
     - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/licenses
 
     - cp -r langs_complete/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages/
     - cp -r gui/themes/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes/
+    - cp -r licenses/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/licenses/
 
     - cp dist/mkv-subtitle-converter-$VERSION-amd64 mkv-subtitle-converter/usr/bin/mkv-subtitle-converter
 
@@ -108,18 +126,33 @@ build_deb_package:
   tags:
     - saas-windows-medium-amd64
 
-build_windows_executable:
+.windows_build:
   extends:
     - .windows_job
   stage: build
-  script:
+  before_script:
     - python -m pip install --upgrade pip
-    - pip install babel==2.16.0 certifi==2024.2.2 chardet==5.2.0 charset-normalizer==3.3.2 colorama==0.4.6 darkdetect==0.8.0 idna==3.7 iso-639==0.4.5 "numpy>=2.1.0" opencv-python==4.9.0.80 packaging==24.0 pillow pysrt==1.1.2 pysubs2==1.6.1 pytesseract==0.3.10 requests==2.31.0 tqdm==4.66.2 urllib3==2.2.1 pyinstaller
-    - pyinstaller main.py -w -n "MKV Subtitle Converter" --add-data "./langs_complete;./languages" --add-data "gui\themes;gui\themes" -y --clean --onefile
+    - pip install babel==2.16.0 certifi==2024.2.2 chardet==5.2.0 charset-normalizer==3.3.2 colorama==0.4.6 darkdetect==0.8.0 idna==3.7 iso-639==0.4.5 "numpy>=2.1.0" opencv-python==4.9.0.80 packaging==24.0 pillow pysrt==1.1.2 pysubs2==1.6.1 pytesseract==0.3.10 requests==2.31.0 tesserocr==2.11.0 tqdm==4.66.2 urllib3==2.2.1 pyinstaller
+
+build_windows_executable:
+  extends:
+    - .windows_build
+  script:
+    - pyinstaller main.py -w -n "MKV Subtitle Converter" --hidden-import cysignals -y --clean --onefile
   artifacts:
     paths:
       - "dist/MKV Subtitle Converter.exe"
     expire_in: 1h
+
+build_windows_portable_executable:
+  extends:
+    - .windows_build
+  script:
+    - pyinstaller main.py -w -n "MKV Subtitle Converter" --hidden-import cysignals --add-data "./langs_complete;./languages" --add-data "gui\themes;gui\themes" --add-data "licenses;licenses" -y --clean --onefile
+    - Move-Item "dist\MKV Subtitle Converter.exe" -Destination "dist\MKV-Subtitle-Converter-$VERSION-amd64-portable.exe"
+  artifacts:
+    paths:
+      - dist/MKV-Subtitle-Converter-$VERSION-amd64-portable.exe
 
 build_windows_installer:
   extends:
@@ -142,14 +175,13 @@ build_windows_installer:
 # LINUX AARCH64 BUILDS
 # ==========================================
 
-build_linux_arm64_executable:
+.linux_arm64_build:
   stage: build
   tags:
     - saas-linux-small-arm64
   image: python:3.12-slim
   before_script:
-    - apt-get update && apt-get install -y binutils python3-tk tk-dev tcl-dev
-  script:
+    - apt-get update && apt-get install -y binutils python3-tk tk-dev tcl-dev g++ pkg-config libtesseract-dev libleptonica-dev
     - python -m pip install --upgrade pip
     - pip install babel==2.16.0
         certifi==2024.2.2
@@ -167,14 +199,31 @@ build_linux_arm64_executable:
         pysubs2==1.6.1
         pytesseract==0.3.10
         requests==2.31.0
+        tesserocr==2.11.0
         tqdm==4.66.2
         urllib3==2.2.1
         pyinstaller
-    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" -y --clean --onefile
+
+build_linux_arm64_executable:
+  extends:
+    - .linux_arm64_build
+  script:
+    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" --hidden-import cysignals -y --clean --onefile
     - mv dist/mkv-subtitle-converter dist/mkv-subtitle-converter-$VERSION-aarch64
   artifacts:
     paths:
       - dist/mkv-subtitle-converter-$VERSION-aarch64
+    expire_in: 1h
+
+build_linux_arm64_portable_executable:
+  extends:
+    - .linux_arm64_build
+  script:
+    - python -m PyInstaller main.py -w -n "mkv-subtitle-converter" --hidden-import cysignals --add-data "langs_complete:languages" --add-data "gui/themes:gui/themes" --add-data "licenses:licenses" -y --clean --onefile
+    - mv dist/mkv-subtitle-converter dist/mkv-subtitle-converter-$VERSION-aarch64-portable
+  artifacts:
+    paths:
+      - dist/mkv-subtitle-converter-$VERSION-aarch64-portable
 
 build_arm64_deb_package:
   stage: package
@@ -190,9 +239,11 @@ build_arm64_deb_package:
     - mkdir -p mkv-subtitle-converter/DEBIAN
     - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages
     - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes
+    - mkdir -p mkv-subtitle-converter/usr/share/mkv-subtitle-converter/licenses
 
     - cp -r langs_complete/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/languages/
     - cp -r gui/themes/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/gui/themes/
+    - cp -r licenses/* mkv-subtitle-converter/usr/share/mkv-subtitle-converter/licenses/
 
     - cp dist/mkv-subtitle-converter-$VERSION-aarch64 mkv-subtitle-converter/usr/bin/mkv-subtitle-converter
 

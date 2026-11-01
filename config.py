@@ -193,6 +193,13 @@ class Config:
                 self.logger.debug(f"Found resource file (PyInstaller): {path}")
                 return path
 
+        # Path next to the frozen executable (e.g., Windows installer)
+        if getattr(sys, 'frozen', False):
+            path = os.path.join(os.path.dirname(sys.executable), relative_path)
+            if os.path.exists(path):
+                self.logger.debug(f"Found resource file (executable dir): {path}")
+                return path
+
         # Path for local development (running from project root)
         # Assumes the script is run from the project root directory.
         path = os.path.join(os.path.dirname(__file__), relative_path)

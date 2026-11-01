@@ -1,3 +1,4 @@
+import os
 import tkinter as tk
 from tkinter import ttk
 from config import Config
@@ -62,7 +63,9 @@ class ThemeLicense(LicenseFrame):
         super().__init__(parent)
 
         # variables
-        license = open("licenses/Forest-ttk-theme.txt", "r").read()
+        license_path = self.config.get_resource_path(os.path.join("licenses", "Forest-ttk-theme.txt"))
+        with open(license_path, "r", encoding="utf-8") as f:
+            license = f.read()
 
         # gui
         license_text = tk.Text(self, wrap="word", font=("Arial", 10), bd=0)
