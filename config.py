@@ -20,6 +20,9 @@ class Config:
         THEME = 'sTheme'
         OCR_BACKEND = 'sOcrBackend'
         OCR_LANG_PATH = 'sOcrLangPath'
+        OPENAI_API_BASE_URL = 'sOpenAiApiBaseUrl'
+        OPENAI_API_KEY = 'sOpenAiApiKey'
+        OPENAI_MODEL = 'sOpenAiModel'
 
     
     config = None
@@ -51,8 +54,11 @@ class Config:
         settings[self.Settings.LANGUAGE] = 'en_US'
         settings[self.Settings.FIRST_START] = True
         settings[self.Settings.THEME] = 'Light'
-        settings[self.Settings.OCR_BACKEND] = 'tesserocr'
+        settings[self.Settings.OCR_BACKEND] = 'pytesseract'
         settings[self.Settings.OCR_LANG_PATH] = ''
+        settings[self.Settings.OPENAI_API_BASE_URL] = 'http://localhost:3001/v1'
+        settings[self.Settings.OPENAI_API_KEY] = 'not-a-real-api-key'
+        settings[self.Settings.OPENAI_MODEL] = 'glm-ocr'
 
         self.save_settings(settings)
 
@@ -117,7 +123,8 @@ class Config:
     def _get_section(self, setting: Settings):
         config = {
             'General': [self.Settings.CHECK_FOR_UPDATES, self.Settings.LANGUAGE, self.Settings.THEME, self.Settings.OCR_BACKEND],
-            'Misc': [self.Settings.FIRST_START, self.Settings.OCR_LANG_PATH]
+            'Misc': [self.Settings.FIRST_START, self.Settings.OCR_LANG_PATH],
+            'OpenAI': [self.Settings.OPENAI_API_BASE_URL, self.Settings.OPENAI_API_KEY, self.Settings.OPENAI_MODEL]
         }
 
         for section, settings in config.items():

@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from config import Config
-import copy
+from openai import OpenAI
 
 class SettingsWindow(tk.Toplevel):
     
@@ -27,9 +27,11 @@ class SettingsWindow(tk.Toplevel):
         general_settings = SidebarOption(self.sidebar, self.translate("General"), lambda: self.show_frame(GeneralSettings))
         graphics_settings = SidebarOption(self.sidebar, self.translate("Graphics"), lambda: self.show_frame(GraphicsSettings))
         ocr_settings = SidebarOption(self.sidebar, self.translate("OCR"), lambda: self.show_frame(OCRSettings))
+        llm_settings = SidebarOption(self.sidebar, self.translate("OpenAI"), lambda: self.show_frame(LLMSettings))
         general_settings.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
         graphics_settings.grid(row=1, column=0, padx=5, pady=(5, 0), sticky="w")
         ocr_settings.grid(row=2, column=0, padx=5, pady=(5, 0), sticky="w")
+        llm_settings.grid(row=3, column=0, padx=5, pady=(5, 0), sticky="w")
 
         # --------------------  MULTI PAGE SETTINGS ----------------------------
 
@@ -39,7 +41,7 @@ class SettingsWindow(tk.Toplevel):
 
         self.frames = {}
 
-        for F in {GeneralSettings, GraphicsSettings, OCRSettings}:
+        for F in {GeneralSettings, GraphicsSettings, OCRSettings, LLMSettings}:
             frame = F(settings_frames_container)
             self.frames[F] = frame
             frame.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -219,6 +221,60 @@ class OCRSettings(SettingsFrame):
             }
 
             self.config.save_settings(settings)
+
+
+class LLMSettings(SettingsFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        # variables
+        self.api_base_url = tk.StringVar()
+        self.api_key = tk.StringVar()
+        self.model = tk.StringVar()
+
+        # map from config value to translated value for display
+        self.api_base_url.set(self.config.get_value(Config.Settings.OPENAI_API_BASE_URL))
+        self.api_key.set(self.config.get_value(Config.Settings.OPENAI_API_KEY))
+        self.model.set(self.config.get_value(Config.Settings.OPENAI_MODEL))
+
+        # gui
+        api_base_url_label = ttk.Label(self, text=self.translate("OpenAI API Base URL:"))
+        api_base_url_label.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
+
+        api_base_url_entry = ttk.Entry(self, textvariable=self.api_base_url)
+        api_base_url_entry.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+
+        api_key_label = ttk.Label(self, text=self.translate("API Key:"))
+        api_key_label.grid(row=1, column=0, padx=5, pady=(5, 0), sticky="w")
+
+        api_key_entry = ttk.Entry(self, textvariable=self.api_key)
+        api_key_entry.grid(row=1, column=1, padx=5, pady=(5, 0), sticky="w")
+
+        check_connection_button = ttk.Button(self, text=self.translate("Check Connection"), command=lambda: self.check_connection(api_base_url_entry.get(), api_key_entry.get()))
+        check_connection_button.grid(row=2, column=0, columnspan=2, padx=5, pady=(5, 0), sticky="ew")
+
+        model_label = ttk.Label(self, text=self.translate("Model:"))
+        model_label.grid(row=3, column=0, padx=5, pady=(5, 0), sticky="w")
+
+        self.model_list = ttk.Combobox(self, values=[], textvariable=self.model, state="readonly")
+        self.model_list.grid(row=3, column=1, padx=5, pady=(5, 0), sticky="w")
+
+    def save_settings(self):
+        settings = {
+            Config.Settings.OPENAI_API_BASE_URL: self.api_base_url.get(),
+            Config.Settings.OPENAI_API_KEY: self.api_key.get(),
+            Config.Settings.OPENAI_MODEL: self.model.get()
+        }
+
+        self.config.save_settings(settings)
+
+    def check_connection(self, url=None, api_key=None):
+        client = OpenAI(base_url=url, api_key=api_key)
+        models = client.models.list()
+
+        print(f"Available models: {[model.id for model in models.data]}")
+
+        self.model_list['values'] = [model.id for model in models.data]
 
 
 # ----------------------------- CUSTOM WIDGETS ---------------------------------
