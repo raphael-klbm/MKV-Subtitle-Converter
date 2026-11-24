@@ -4,6 +4,7 @@ import os
 from backend.ocr.ocr_backend import OCRBackend
 from backend.ocr.pytesseract_backend import PytesseractBackend
 from backend.ocr.tesserocr_backend import TesserOCRBackend
+from backend.ocr.llm_backend import LLMBackend
 import backend.pgs.pgsreader as pgsreader
 from backend.pgs.imagemaker import ImageMaker
 from tqdm import tqdm
@@ -81,6 +82,8 @@ class SubtitleConverter:
                 return PytesseractBackend('', language)
             case 'tesserocr':
                 return TesserOCRBackend(language_path, language)
+            case 'llm':
+                return LLMBackend(language_path, language)
             case _:
                 self.config.logger.warning(f'Invalid OCR backend "{self.config.get_value(Config.Settings.OCR_BACKEND)}" set in config, defaulting to pytesseract.')
                 return PytesseractBackend('', language)  # default to pytesseract if no valid backend is set
@@ -95,6 +98,8 @@ class SubtitleConverter:
                 return PytesseractBackend.get_languages('')
             case 'tesserocr':
                 return TesserOCRBackend.get_languages(language_path)
+            case 'llm':
+                return LLMBackend.get_languages(language_path)  # TODO: LLMBackend.get_languages() currently returns an empty list, implement it to return available languages if possible
             case _:
                 self.config.logger.warning(f'Invalid OCR backend "{backend_name}" set in config, defaulting to pytesseract.')
                 return PytesseractBackend.get_languages('')  # default to pytesseract if no valid backend is set
